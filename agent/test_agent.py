@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent import executor  # noqa: E402
 from agent.drivers import PROVIDERS, anthropic_driver, openai_driver  # noqa: E402
-from agent.mcp_datahub import result_to_text  # noqa: E402
+from agent.mcp_datahub import resolve_host_url, result_to_text  # noqa: E402
 from agent.prompt import system_prompt  # noqa: E402
 
 EXPECTED = {
@@ -287,6 +287,29 @@ def test_stop_reason_keeps_the_incomplete_detail():
     )
     assert openai_driver._stop_reason(response) == "incomplete:max_output_tokens"
     assert openai_driver._stop_reason(SimpleNamespace(status="completed", incomplete_details=None)) == "completed"
+
+
+# --- the project's own .env is written for containers ----------------------
+
+
+def test_container_only_hostname_is_rewritten_for_the_host():
+    """`.env` sets DATAHUB_GMS_URL=http://host.docker.internal:8090, which is
+    right inside a container and unresolvable on the host — where the agent
+    runs. Sourcing the project's own .env used to kill the MCP subprocess."""
+    url, note = resolve_host_url("http://host.docker.internal:8090")
+    assert url == "http://localhost:8090"
+    assert note and "container-only" in note
+
+
+def test_resolvable_hostnames_are_left_alone():
+    for url in ("http://localhost:8090", "http://127.0.0.1:8000"):
+        assert resolve_host_url(url) == (url, None)
+
+
+def test_an_unresolvable_host_is_reported_not_silently_rewritten():
+    url, note = resolve_host_url("http://no-such-host.invalid:8090")
+    assert url == "http://no-such-host.invalid:8090", "only the docker name is safe to rewrite"
+    assert note and "does not resolve" in note
 
 
 # --- the catalog must not be able to name a guardrailed operation ----------

@@ -69,7 +69,7 @@ Anthropic and OpenAI tool formats, one system prompt serves both, and the approv
 provider-neutral executor — so no driver can route around it. Tests assert that the two providers
 are handed identical tool sets and that the executor imports no model SDK, which makes the claim
 checkable rather than rhetorical. The OpenAI driver targets the bare Responses API, so
-`OPENAI_BASE_URL` also points it at Azure, vLLM, Ollama or a self-hosted model. Forty-one tests
+`OPENAI_BASE_URL` also points it at Azure, vLLM, Ollama or a self-hosted model. Forty-four tests
 cover the agent offline, including an end-to-end run of the real loop, MCP bridge, executor and
 approval gate against a scripted model — no key required to verify it.
 `skills/assess-data-temperature/` encodes the same procedure as a loadable **DataHub Skill** for

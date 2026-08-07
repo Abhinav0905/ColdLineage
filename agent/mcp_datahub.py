@@ -15,15 +15,47 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import socket
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse, urlunparse
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
-DATAHUB_GMS_URL = os.environ.get("DATAHUB_GMS_URL", "http://localhost:8090")
+
+def resolve_host_url(url: str) -> tuple[str, str | None]:
+    """Translate a container-only hostname into one the host can reach.
+
+    `.env` is written for the containerised backend, where reaching a service on
+    the host means `host.docker.internal`. The agent runs *on* the host, where
+    that name does not resolve at all — so sourcing the project's own `.env`
+    breaks it, which is a confusing way to fail for something that is really a
+    one-word difference. Rewrite it and say so.
+
+    Returns (url, note). The note is None when nothing needed changing.
+    """
+    parsed = urlparse(url)
+    host = parsed.hostname
+    if not host:
+        return url, None
+    try:
+        socket.getaddrinfo(host, None)
+        return url, None
+    except socket.gaierror:
+        pass
+    if host != "host.docker.internal":
+        return url, f"{host!r} does not resolve from here"
+    port = f":{parsed.port}" if parsed.port else ""
+    swapped = urlunparse(parsed._replace(netloc=f"localhost{port}"))
+    return swapped, f"{host} is container-only; using {swapped} from the host"
+
+
+DATAHUB_GMS_URL, _GMS_NOTE = resolve_host_url(
+    os.environ.get("DATAHUB_GMS_URL", "http://localhost:8090")
+)
 
 
 def _server_params(datahub_gms_url: str) -> StdioServerParameters:

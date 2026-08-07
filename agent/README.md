@@ -122,7 +122,7 @@ done
 Both suites run offline — no API key, no network, no running stack.
 
 ```bash
-.venv-agent/bin/python agent/test_agent.py             # 29 tests: parity, negotiation, trust boundary
+.venv-agent/bin/python agent/test_agent.py             # 32 tests: parity, negotiation, trust boundary
 .venv-agent/bin/python agent/test_loop_integration.py  # 12 tests: the OpenAI loop, end to end
 ```
 
@@ -143,17 +143,25 @@ Being precise about this, because "provider-agnostic" is easy to claim and easy 
 | | |
 |---|---|
 | Verified against live DataHub | The MCP handshake, `list_tools`, and catalog reads |
-| Verified against a live API | Both drivers reach the provider and are rejected only on credentials |
+| Verified against the live OpenAI API | The model catalogue, effort validation, and that a run reaches the provider and fails only on billing |
 | Verified against a scripted endpoint | The whole OpenAI loop — tool calls, results, reasoning replay, the gate |
 | Verified against the installed SDKs | Every request shape, from the generated types on disk |
-| **Not yet verified** | **That a real OpenAI model completes this task well** — no key was available |
+| **Not yet verified** | **That a real model completes this task well** — the available key had no credits |
 
-The specific things a first live run should check: that `gpt-5.6` resolves (the default is a rolling
-alias with no dated snapshot, so the driver falls back via `models.list()` if not); that
-`effort=high` is accepted; that `include=["reasoning.encrypted_content"]` with `store=False` returns
-populated `encrypted_content`; and that `mcp-server-datahub`'s real schemas are accepted with
-`strict: false`. Each has a coded fallback, so a wrong guess degrades the run instead of ending it —
-but a fallback firing is not the same as a guess being right.
+Two guesses were wrong and are now corrected from live responses:
+
+- **There is no `gpt-5.6` alias.** `models.list()` serves `gpt-5.6-sol`, `-terra` and `-luna` and no
+  bare alias, so the default is the concrete `gpt-5.6-sol`. Defaulting to the alias would have 404'd
+  into the fallback ladder and still worked, which is exactly what the ladder is for — but a wasted
+  round-trip for a name that does not exist is not a design.
+- **`effort: "minimal"` is a hard 400 on that family**, answered with *"Unsupported value: 'minimal'
+  is not supported with the 'gpt-5.6-sol' model. Supported values are: 'none', 'low', 'medium',
+  'high', 'xhigh', and 'max'."* Note it never says "effort" — so the negotiator matches the quoted
+  value too. `clamp_effort` means asking for `minimal` downgrades rather than fails.
+
+Still unconfirmed, each with a coded fallback: that `include=["reasoning.encrypted_content"]` with
+`store=False` returns populated `encrypted_content`, and that `mcp-server-datahub`'s real schemas
+are accepted with `strict: false`. A fallback firing is not the same as a guess being right.
 
 ## Layout
 

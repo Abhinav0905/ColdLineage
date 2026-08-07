@@ -27,7 +27,13 @@ import os
 import re
 from typing import Any
 
-from openai import APIStatusError, AsyncOpenAI, AuthenticationError, NotFoundError
+from openai import (
+    APIStatusError,
+    AsyncOpenAI,
+    AuthenticationError,
+    NotFoundError,
+    RateLimitError,
+)
 
 from .. import render
 from ..executor import BY_NAME, as_openai_tools, dispatch
@@ -40,10 +46,15 @@ from ..mcp_datahub import result_to_text
 # load-bearing: the default is overridable, and an unreachable model makes the
 # driver ask the key what it *can* reach rather than dying on a 404.
 
-DEFAULT_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.6")
+# `gpt-5.6-sol` is the flagship for tool-heavy agentic work. Note it is the
+# concrete id, not the `gpt-5.6` alias: checked against a live `models.list()`,
+# the alias is *not* served — only `-sol`, `-terra` and `-luna` are. Defaulting
+# to the alias would 404 into the fallback ladder below and work anyway, but
+# paying a wasted round-trip for a name that does not exist is silly.
+DEFAULT_MODEL = os.environ.get("OPENAI_MODEL", "gpt-5.6-sol")
 
 # Best first. Only consulted when the configured model is rejected.
-PREFERRED_MODELS = ("gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5", "gpt-5.4")
+PREFERRED_MODELS = ("gpt-5.6-sol", "gpt-5.6", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5", "gpt-5.4")
 
 # Never auto-select: non-reasoning, deprecated, or a silently rotating snapshot.
 BLOCKED_MODELS = {"chat-latest", "chatgpt-4o-latest", "gpt-4o", "gpt-4o-mini"}
@@ -53,8 +64,12 @@ MAX_OUTPUT_TOKENS = 16_000
 
 # The SDK's ReasoningEffort literal in 2.53.0; the API rejects anything else.
 VALID_EFFORTS = ("none", "minimal", "low", "medium", "high", "xhigh", "max")
-# Reported to be a hard 400 on the gpt-5.6 family while remaining valid on older
-# models. Clamped rather than hardcoded, because that report is second-hand.
+# A hard 400 on the gpt-5.6 family while remaining valid on older models —
+# confirmed against the live API, which answers `minimal` with:
+#   "Unsupported value: 'minimal' is not supported with the 'gpt-5.6-sol' model.
+#    Supported values are: 'none', 'low', 'medium', 'high', 'xhigh', and 'max'."
+# Clamped rather than rejected, so asking for `minimal` downgrades instead of
+# failing. Note the wording carries no "effort" token — see `Wire.narrow`.
 NO_MINIMAL = ("gpt-5.6",)
 # Order used when an endpoint rejects the effort we asked for.
 EFFORT_LADDER = ("max", "xhigh", "high", "medium", "low", "minimal", "none")
@@ -376,6 +391,21 @@ async def run(
             print(f"\n  OpenAI rejected the credentials: {exc.message}")
             print("  " + credential_help().replace("\n", "\n  "))
             stop_reason = "auth_failed"
+            break
+        except RateLimitError as exc:
+            # A valid key with no credits is a billing problem, not a bug, and it
+            # deserves to read like one. 429 also covers real throttling, so say
+            # which of the two it was rather than guessing.
+            quota = "insufficient_quota" in str(exc) or "no credits" in str(exc).lower()
+            if quota:
+                print(f"\n  The OpenAI key is valid but has no credits: {exc.message}")
+                print("  Add credits, or run the same question through Anthropic:")
+                print("    export ANTHROPIC_API_KEY=sk-ant-...")
+                print("    agent/coldlineage_agent.py --provider anthropic ...")
+                stop_reason = "insufficient_quota"
+            else:
+                print(f"\n  Rate limited by OpenAI after retries: {exc.message}")
+                stop_reason = "rate_limited"
             break
         except (NotFoundError, APIStatusError) as exc:
             if not isinstance(exc, NotFoundError) and not _is_model_error(exc):

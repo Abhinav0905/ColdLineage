@@ -39,8 +39,11 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agent import executor  # noqa: E402
-from agent.mcp_datahub import DATAHUB_GMS_URL, datahub_mcp  # noqa: E402
+from agent.mcp_datahub import _GMS_NOTE, DATAHUB_GMS_URL, datahub_mcp, resolve_host_url  # noqa: E402
 from agent.prompt import DEFAULT_QUESTION, system_prompt  # noqa: E402
+
+# Same container-only-hostname trap as the GMS URL; see resolve_host_url.
+executor.COLDLINEAGE_URL, _API_NOTE = resolve_host_url(executor.COLDLINEAGE_URL)
 
 PROVIDERS = {
     "anthropic": "agent.drivers.anthropic_driver",
@@ -122,6 +125,9 @@ async def main() -> int:
 
     print("\033[1mColdLineage agent\033[0m")
     print(f"  provider    : {provider} ({model}, effort={args.effort})")
+    for note in (_GMS_NOTE, _API_NOTE):
+        if note:
+            print(f"  note        : {note}")
     if not await executor.preflight(DATAHUB_GMS_URL):
         print("\n  Preflight failed. Start the stack first (see README) and retry.")
         return 1
