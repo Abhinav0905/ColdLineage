@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# DataHub CLI local state
+.datahubenv
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local scratch — never commit run output; examples/ is curated by hand
+scratch/
+*.log

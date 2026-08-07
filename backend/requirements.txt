@@ -1,0 +1,14 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+sqlalchemy==2.0.43
+psycopg[binary]==3.2.9
+pydantic==2.11.7
+pydantic-settings==2.10.1
+pandas==2.3.1
+pyarrow==21.0.0
+boto3==1.40.5
+httpx==0.28.1
+python-dateutil==2.9.0.post0
+sqlglot==27.10.0
+networkx==3.5
+faker==37.5.3
