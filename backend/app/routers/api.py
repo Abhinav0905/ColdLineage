@@ -102,10 +102,8 @@ def _archive_state(db: Session, urn: str) -> tuple[str, str | None]:
 
 def _summary(assessment: DatasetAssessment, dataset_id: int, state: str, archived_through: str | None) -> dict:
     ctx = assessment.context
-    span_min = span_max = None
-    # min/max come from the warehouse read in ContextService via physical facts; the
-    # context object carries them indirectly through row/size only, so recompute lazily
-    # is unnecessary -- the detail endpoint exposes the full context.
+    span_min = ctx.min_date.isoformat() if ctx.min_date else None
+    span_max = ctx.max_date.isoformat() if ctx.max_date else None
     return {
         "id": dataset_id,
         "urn": ctx.urn,
@@ -208,9 +206,6 @@ async def dataset_detail(dataset_id: int, db: Session = Depends(get_db)):
     payload = _summary(assessment, dataset_id, state, through)
 
     ctx = assessment.context
-    span = _date_span(db, ctx)
-    payload["min_date"] = span[0]
-    payload["max_date"] = span[1]
     payload["context"] = ctx.model_dump(mode="json")
     payload["evidence"] = [e.model_dump(mode="json") for e in assessment.evidence]
     payload["confidence"] = assessment.confidence

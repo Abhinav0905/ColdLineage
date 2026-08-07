@@ -1,150 +1,283 @@
 # ColdLineage
 
-**Keep the context hot. Move the data cold.**
+**DataHub can tell you a table is cold. It cannot tell you that _half_ a table is cold — and it cannot move a single byte. ColdLineage does both, and writes the receipt back into DataHub.**
 
-ColdLineage is a DataHub-native agentic control plane for governed data tiering. It does not archive data simply because it is old. It combines DataHub context, warehouse usage, retention rules and lineage to explain *why* a historical range is safe to move, simulates downstream impact, requires approval, performs a real archive to Parquet, verifies the result, removes the hot rows, supports real rehydration and writes archive provenance back to DataHub.
+Built for [Build with DataHub: The Agent Hackathon](https://datahub.devpost.com/).
+Challenge category: **Agents That Do Real Work**.
 
-## Hackathon demo
+---
 
-The included synthetic healthcare estate contains three deliberately different cases:
+## The problem, stated precisely
 
-1. `patient_encounters` — cold enough to archive, with downstream dependencies that are safe within the chosen horizon.
-2. `claims_history` — old but blocked by a seven-year retention/legal-hold case.
-3. `care_events_live` — actively queried and correctly kept hot.
+Every data platform team has a stalled "what can we drop?" project. It stalls because nobody can
+prove a deletion is safe, so nothing gets deleted, and the warehouse bill compounds.
 
-That contrast is intentional. The demo proves the agent is not a glorified `DELETE WHERE date < ...` script.
+DataHub already solves the *detection* half of this, and solves it well. Metadata Tests can
+continuously find tables in the bottom quartile of usage. Impact Analysis shows what depends on
+them. Deprecation and soft-delete mark them. DPG Media cut Snowflake spend 25% doing exactly that.
+**None of that is what this project claims to add.**
 
-## What is implemented
+Two things remain, and they are the two that actually block the work:
 
-- Data Temperature Map
-- Evidence Graph
-- policy and legal-hold blocker checks
-- downstream "What if?" simulation
-- human approval gate
-- real PostgreSQL -> Parquet archive
-- real MinIO/S3-compatible cold storage
-- SHA-256 object verification
-- source-row removal only after archive write succeeds
-- real restore into a temporary rehydration table
-- audit trail
-- DataHub writeback adapter
-- reusable DataHub skill: `assess-data-temperature`
-- polished Next.js demo UI
+1. **DataHub's model is dataset- and column-level.** It can say "this table is unused". It has no
+   way to say *"rows before 2023 are cold while the last 90 days are hot"*. Partition-level
+   metadata is still an open feature request. So the enormous middle case — a **heavily-queried
+   table whose first four years nobody has read in years** — is invisible to dataset-level tiering.
+   That case is most of the savings, and it is the one that terrifies people, because archiving a
+   live table feels reckless.
 
-## Stack
+2. **Nothing in DataHub moves data.** Soft delete, DataHubGC, deprecation and Metadata Tests all
+   operate strictly on metadata. DataHubGC deletes stale *metadata* rows by age; it has never moved
+   a byte of warehouse data.
 
-- Next.js 15 / React 19
-- FastAPI
-- PostgreSQL 16
-- MinIO / S3 API
-- Pandas + PyArrow
-- SQLAlchemy
-- DataHub context + writeback adapter
+ColdLineage occupies exactly that gap.
 
-## Quick start
+## How it decides
 
-Requirements: Docker Desktop and Python 3.11+.
+The question "is this date range safe to archive?" reduces to one measurable thing:
+
+> **How far back does each downstream consumer actually read?**
+
+DataHub knows *that* a dashboard depends on a table. It does not know that the dashboard only ever
+reads the trailing twelve months. But it does hold the dashboard's **real SQL**, as Query entities.
+
+So ColdLineage reads that SQL out of DataHub and parses it with `sqlglot`, resolving the lower
+bound each consumer places on the subject's date column into a concrete date:
+
+| Predicate in the consumer's real SQL | Resolved history window |
+|---|---|
+| `event_date BETWEEN DATE '2024-01-01' AND CURRENT_DATE` | 2024-01-01 |
+| `event_date >= CURRENT_DATE - INTERVAL '90 days'` | 2026-05-08 |
+| `date_trunc('month', event_date) >= date_trunc('month', CURRENT_DATE - INTERVAL '18 months')` | 2025-02-01 |
+| `event_date > (CURRENT_TIMESTAMP - INTERVAL '24 months')::date` | 2024-08-06 |
+| `WHERE performing_lab IS NOT NULL` | **unbounded — blocks every cutoff** |
+
+A cutoff is safe **iff it is no later than the earliest window across all active consumers.**
+
+That last row is the whole point. It *has* a `WHERE` clause, so a "does this query filter?"
+heuristic passes it. It has no date bound, so it reads every row ever written.
+
+### Everything unproven blocks
+
+The parser is deliberately pessimistic, because getting this backwards deletes data someone was
+still reading. All of these resolve to *unbounded*, which refuses the archive:
+
+- no date predicate at all
+- a boolean `OR` where any branch is unconstrained
+- `NOT` over a date predicate
+- a bound we can parse but cannot resolve to a date
+- the subject read inside a CTE whose outer query filters it
+- SQL we fail to parse
+- **lineage we could not read at all** — absence of evidence is not evidence of safety
+
+Under `AND` the effective bound is the *latest* of the branch bounds; under `OR`, the *earliest*,
+and unbounded is contagious. 20 tests in
+[`backend/tests/test_window_extraction.py`](backend/tests/test_window_extraction.py) pin this down.
+
+## How DataHub is used
+
+Not as a decoration on the side of a local database. **Every decision input is read from DataHub at
+request time**, and every value carries a provenance tag that is rendered in the UI, so a missing
+input shows up as a visible gap rather than a plausible-looking number.
+
+**Read** (GraphQL against GMS — every document validated against a live v1.7.0 schema):
+
+| Signal | Source |
+|---|---|
+| Downstream consumers | `searchAcrossLineage` |
+| The SQL each one runs | `listQueries` → `queryProperties.statement` |
+| Usage: last query, 30d count, distinct users | `datasetUsageStatistics` |
+| Retention floor, legal hold, business criticality | structured properties `io.coldlineage.policy.*` |
+| Schema, date column, owners, domain, tags, terms | `schemaMetadata`, `ownership`, `domain`, `tags` |
+
+**Write** — four contributions back to the graph after a verified archive:
+
+| Contribution | Mutation | Why |
+|---|---|---|
+| 6 typed archive properties | `upsertStructuredProperties` | machine-readable facts, validated and scoped |
+| Deprecation note + `decommissionTime` | `updateDeprecation` | the warning a human sees on the entity |
+| Manifest link | `addLink` | where the bytes went, clickable |
+| `cold-tier-archived` tag | `addTag` | makes the archived set searchable |
+
+Deliberately **not** done: writing the `datasetProperties` aspect wholesale. That aspect holds other
+writers' custom properties and a whole-aspect PUT silently destroys them. Structured properties are
+typed, validated, `entity_types`-scoped, and survive other writers. The definitions are committed in
+[`backend/app/datahub/properties.yaml`](backend/app/datahub/properties.yaml).
+
+**Ingest** uses the first-party `postgres` connector plus the `acryl-datahub` Python SDK, so the
+demo estate is real catalog content with real URNs — not hand-built fixtures.
+
+**Agent surface**: [`skills/assess-data-temperature/`](skills/assess-data-temperature/) is a
+loadable DataHub Skill. It is the reasoning layer; the FastAPI service below is the only thing that
+can touch data. See [Trust boundary](#trust-boundary).
+
+## Two commands
+
+Requires Docker Desktop (≥8 GB to Docker) and Python 3.11+.
 
 ```bash
-git clone <your-repo-url>
-cd coldlineage
-docker compose up -d --build
+# 1. DataHub itself — a real external catalog, exactly as it would be in your environment
+pip install 'acryl-datahub[datahub-rest]'
+datahub docker quickstart
 
-# Seed the synthetic healthcare estate from your host machine.
-pip install sqlalchemy psycopg[binary] faker
-DATABASE_URL=postgresql+psycopg://coldlineage:coldlineage@localhost:5433/coldlineage python scripts/seed.py
+# 2. ColdLineage
+git clone https://github.com/Abhinav0905/ColdLineage.git
+cd ColdLineage
+make demo          # brings up Postgres + MinIO + API + UI, seeds 3.65M rows, ingests into DataHub
 ```
 
-Open:
+| | |
+|---|---|
+| ColdLineage UI | http://localhost:3100 |
+| API docs | http://localhost:8000/docs |
+| DataHub | http://localhost:9002 |
+| MinIO console | http://localhost:9001 (`minioadmin` / `minioadmin`) |
 
-- UI: http://localhost:3000
-- FastAPI docs: http://localhost:8000/docs
-- MinIO console: http://localhost:9001 (`minioadmin` / `minioadmin`)
-
-Run the smoke test:
+**If a port is already taken** (8080 and 3000 are common), override and re-run:
 
 ```bash
-python scripts/smoke_test.py
+DATAHUB_GMS_URL=http://host.docker.internal:8090 docker compose up -d
 ```
 
-## Three-minute demo path
+**No DataHub? Run the recorded catalog.** `DATAHUB_MODE=replay` serves verbatim GMS responses
+committed in [`examples/cassettes/`](examples/cassettes/). The UI labels the mode and the recording
+timestamp, and every signal is tagged `cassette:recorded` rather than `datahub:*`.
+There is deliberately **no third mode that invents context.**
 
-1. Open **Overview**. Point out the three temperature classes.
-2. Open **Candidates** and select `patient_encounters`.
-3. Show the Evidence Graph: stale usage, policy, lineage and sensitive-data context.
-4. Set the cutoff to `2024-07-01` and click **Simulate**.
-5. Show the downstream impact and the recommended `ARCHIVE_WITH_REHYDRATION` result.
-6. Click **Approve & execute**.
-7. Show the generated S3 URI and SHA-256 digest.
-8. Open **Restore** and rehydrate the run.
-9. Open **Audit** and show preview -> simulation -> execution -> restore as a single trace.
-10. In a live DataHub environment, show the `coldlineage.*` custom properties written back to the dataset.
+## The demo estate
 
-## Temperature score
+Five synthetic healthcare tables, **3,650,000 rows / 566 MB measured** (`pg_total_relation_size`,
+never declared). Four different date-column names on purpose — a parser that hardcodes one looks
+like it works and is wrong.
 
-The score is deterministic and intentionally inspectable. Higher is hotter:
+| Table | What it isolates |
+|---|---|
+| **`patient_encounters`** | **The hero.** Temperature **81.2 HOT** — genuinely in active use — yet 516,088 rows (46.9%) sit before 2023 and every consumer reads no earlier than 2024-01-01. *Archivable.* |
+| **`lab_results`** | **The killer.** 0 queries, 0 users in 30 days. Every dataset-level tool archives it. **Blocked** — one HIPAA extract does an unbounded scan. |
+| `claims_history` | ACTIVE legal hold (`MDL-2291`) as a DataHub structured property. Range analysis approves; policy vetoes. |
+| `care_events_live` | Genuinely hot; the 2-year retention floor lands before the table starts. |
+| `billing_ledger` | Consumers clear a 2022 cutoff; the 7-year retention floor does not. Same table, different cutoff, different answer. |
 
-- 42% access recency
-- 28% query frequency
-- 18% active downstream dependency count
-- 12% business criticality
+The first two rows are the argument. One is hot and archivable; the other looks cold and is not.
+Dataset-level temperature gets **both of them wrong**.
 
-Legal holds and retention policy are separate blockers rather than hidden inside the temperature number. This makes explanations defensible.
+## Verified run
 
-## Archive safety model
+Against DataHub OSS v1.7.0, reproducible with `make examples`:
 
-ColdLineage uses a constrained executor instead of giving an LLM arbitrary database permissions.
+```
+patient_encounters   1,100,000 rows / 178 MB / event_date 2019-01-01 .. 2026-08-05
+  temperature 81.2 HOT, archive_eligible: true
 
-Before hot rows are removed, it:
+cutoff sweep
+  2022-01-01  SAFE_TO_ARCHIVE           +730d
+  2023-06-01  SAFE_TO_ARCHIVE           +214d
+  2023-11-15  ARCHIVE_WITH_REHYDRATION   +47d
+  2024-03-01  DO_NOT_ARCHIVE             -60d   blocked by Quarterly Compliance Dashboard
 
-1. selects the candidate rows
-2. serializes them to Parquet
-3. calculates SHA-256
-4. writes the object to MinIO/S3
-5. writes a JSON manifest
-6. only then deletes the hot rows
+EXECUTE cutoff=2023-01-01
+  516,088 rows -> 11 Parquet parts -> s3://coldlineage-archive/...
+  read-back digest match: true | rows 516,088/516,088 | schema match: true
+  -> source deleted only after verification.  1,100,000 -> 583,912
+  DataHub writeback: 4/4 operations ok
 
-Restoration downloads the archive object, recalculates SHA-256 and rejects the restore if the digest differs.
-
-## DataHub integration
-
-Set these environment variables in the root shell before `docker compose up`:
-
-```bash
-export DATAHUB_GMS_URL=http://host.docker.internal:8080
-export DATAHUB_TOKEN=<token>
-export DEMO_MODE=false
+RESTORE  516,088 rows rehydrated, SHA-256 verified
 ```
 
-The application treats DataHub as the context and audit system, not as the row-moving engine. DataHub supplies dataset identity, lineage, ownership, classifications, policy context and usage signals. ColdLineage performs constrained archive/restore operations and writes the result back.
+## Trust boundary
 
-`backend/app/services/datahub.py` is isolated intentionally. DataHub deployment/API details differ between OSS and Cloud versions, so the hackathon demo can run fully in `DEMO_MODE=true` while the adapter can be pointed at the hackathon DataHub endpoint without touching the archive engine.
+```mermaid
+flowchart LR
+  subgraph reasoning["Reasoning — no data-plane credentials"]
+    S[assess-data-temperature Skill]
+  end
+  subgraph context["Context — DataHub"]
+    DH[(GMS)]
+  end
+  subgraph executor["Executor — constrained, 4 operations"]
+    P[plan] --> H{human approval}
+    H -->|plan hash| X[execute]
+    X --> V[verify read-back]
+    V -->|pass| D[delete hot rows]
+    V -->|fail| A[abort, source intact]
+    R[restore]
+  end
+  S -->|reads| DH
+  S -->|plan / simulate| P
+  X --> M[(Parquet + manifest)]
+  X -->|provenance| DH
+  M --> R
+```
 
-## DataHub Skill
+The reasoning layer never receives DDL/DML authority. It calls four constrained operations. A human
+stands between plan and execute. **Approval is a plan hash** binding dataset + cutoff + row count +
+verdict — if live state drifted since the plan was shown, execution is refused rather than
+proceeding against different data.
 
-See:
+And the ordering inside `execute` is the safety argument:
 
-`datahub-skill/coldlineage/SKILL.md`
+1. stream rows out in chunks → multi-part Parquet
+2. upload parts, then the manifest
+3. **download the parts back from object storage**
+4. recompute SHA-256 on the *retrieved* bytes and compare
+5. re-read the Parquet, assert row count and column set
+6. only then delete — in one transaction
+7. re-count; roll back on any mismatch
 
-The skill defines the context requirements, decision procedure, safety rules and machine-readable output contract for an `assess-data-temperature` capability.
+Step 3 is the one that matters. Hashing the buffer you are *about* to upload proves nothing about
+what landed.
 
-## Production extensions after the hackathon
+## What is honest about the numbers
 
-- ingest real warehouse query histories (Snowflake/BigQuery/Postgres pg_stat_statements)
-- partition-level rather than table-level heat scores
-- DataHub MCP/Agent Context Kit as the primary context-fetch path
-- owner approval through Slack/Teams
-- policy-as-code integration
-- KMS encryption metadata and ACL replication
-- Iceberg/Delta-aware detach/reattach executors
-- transparent query federation against cold objects
-- scheduled restore drills
-- savings model from actual cloud billing metadata
+At demo scale the storage saving is **about one cent a month**. 516,088 rows is 93 MB, and no amount
+of framing makes that a business case. The API reports the measured figure alongside the unit rate
+($113.66/TB-month at S3 Standard → Glacier IR) and the archived fraction, and does not round the
+measured one up into looking impressive.
 
-## Why DataHub matters
+**What transfers is the fraction, not the dollars**: 46.9% of a live, actively-queried table turned
+out to be provably unread. Applied to a real estate that ratio is the entire argument, and it is
+measured, not modelled.
 
-Without DataHub, the executor can only see age and rows. With DataHub, it can ask whether an apparently cold partition still feeds a dashboard, ML model, compliance extract, data owner policy or legal constraint. That difference is the product.
+Also stated plainly: rows are exact; per-range **byte figures are estimates** — the table's measured
+physical size apportioned by row share, because Postgres does not track per-range size. Every
+estimate is labelled as one in the API response.
+
+## Limitations
+
+- **Postgres only.** The executor moves Postgres → Parquet. Other platforms appear in lineage as
+  consumers but are not archive candidates; listing a Snowflake table as archivable when the only
+  executor is Postgres would be a claim the product cannot honour.
+- **Restore of ~500k rows takes ~75s.** Correct, not fast; it round-trips through pandas.
+- **The estate is synthetic.** Every ingested entity is stamped `coldlineage.synthetic=true`.
+  Row counts, byte sizes, column types and date ranges are measured from the live database.
+- **Multi-hop consumers inherit** the earliest bound of their upstreams rather than an exact
+  mediated edge. This can over-protect — block a cutoff that was in fact safe — never the reverse.
+- `searchAcrossLineage` lags the graph index by ~1 minute after ingestion.
+
+## Layout
+
+| Path | |
+|---|---|
+| [`backend/app/services/window.py`](backend/app/services/window.py) | **the differentiator** — SQL → history window |
+| [`backend/app/services/simulation.py`](backend/app/services/simulation.py) | cutoff → verdict |
+| [`backend/app/services/archive.py`](backend/app/services/archive.py) | the constrained executor |
+| [`backend/app/datahub/`](backend/app/datahub/) | GraphQL reads, writeback, cassettes, property definitions |
+| [`skills/assess-data-temperature/`](skills/assess-data-temperature/) | the loadable DataHub Skill |
+| [`scripts/`](scripts/) | estate, consumers + their real SQL, DataHub ingestion |
+| [`examples/`](examples/) | artifacts from a real run — readable without running anything |
+| [`CONTRIBUTING-UPSTREAM.md`](CONTRIBUTING-UPSTREAM.md) | proposed upstream contributions to DataHub |
+
+## Upstream contributions
+
+While building this we found that DataHub's own
+`skills/datahub-enrich/references/mutation-reference.md` documents `upsertStructuredProperties`
+incorrectly — the example fails schema validation three ways (`structuredPropertyInputs` should be
+`structuredPropertyInputParams`, `values` takes `[PropertyValueInput!]!` not bare strings, and the
+mutation returns `StructuredProperties!` so it needs a selection set). Proof and a draft PR are in
+[`CONTRIBUTING-UPSTREAM.md`](CONTRIBUTING-UPSTREAM.md), alongside a proposal to contribute this
+skill upstream — `datahub-skills` currently has no skill covering cost, storage, tiering, retention,
+archival or lifecycle.
 
 ## License
 
-Apache-2.0 recommended for the hackathon/open-source submission.
+Apache-2.0. See [LICENSE](LICENSE).

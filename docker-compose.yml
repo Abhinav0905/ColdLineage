@@ -5,9 +5,10 @@
 # `datahub docker quickstart`, exactly as it would be in any environment where it was
 # already your catalog. See README for the two-command setup.
 #
-# DATAHUB_GMS_URL defaults to port 8090 rather than DataHub's usual 8080 because the
-# machine this was built on already had 8080 taken. Override it if yours is free:
-#   DATAHUB_GMS_URL=http://host.docker.internal:8080 docker compose up -d
+# Ports are overridable because 8080 and 3000 are commonly already in use. Copy
+# .env.example to .env and edit it, or set the vars inline:
+#   DATAHUB_GMS_URL=http://host.docker.internal:8090 UI_PORT=3100 docker compose up -d
+# docker compose reads .env from this directory automatically.
 
 services:
   postgres:
@@ -49,7 +50,7 @@ services:
       # live  -> read and write a real DataHub
       # replay -> serve the recorded GMS responses committed in examples/cassettes/
       DATAHUB_MODE: ${DATAHUB_MODE:-live}
-      DATAHUB_GMS_URL: ${DATAHUB_GMS_URL:-http://host.docker.internal:8090}
+      DATAHUB_GMS_URL: ${DATAHUB_GMS_URL:-http://host.docker.internal:8080}
       DATAHUB_TOKEN: ${DATAHUB_TOKEN:-}
       CASSETTE_DIR: /app/cassettes
     ports: ["8000:8000"]
@@ -66,7 +67,8 @@ services:
     build: ./frontend
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api
-    ports: ["3000:3000"]
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports: ["${UI_PORT:-3000}:3000"]
     depends_on: [backend]
 
 volumes:

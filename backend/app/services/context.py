@@ -445,6 +445,8 @@ class ContextService:
             downstream=windows,
             row_count=physical["row_count"],
             size_bytes=physical["size_bytes"],
+            min_date=physical["min_date"],
+            max_date=physical["max_date"],
             physical_provenance=(
                 _from(Source.WAREHOUSE, f"count(*) and pg_total_relation_size on {table_name}")
                 if physical["row_count"] is not None

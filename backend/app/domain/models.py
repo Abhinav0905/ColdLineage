@@ -166,6 +166,10 @@ class DatasetContext(BaseModel):
     # Physical facts, measured from the warehouse -- never estimated.
     row_count: int | None = None
     size_bytes: int | None = None
+    # The date span actually present in the table. The UI draws the range timeline
+    # against this, so it has to be measured, not inferred from the cutoff.
+    min_date: date | None = None
+    max_date: date | None = None
     physical_provenance: Provenance
 
     sensitive: bool = False
