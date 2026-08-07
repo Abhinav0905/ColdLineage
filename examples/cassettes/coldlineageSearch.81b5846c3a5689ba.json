@@ -1,0 +1,109 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.228613+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageSearch",
+  "variables": {
+    "query": "*",
+    "count": 100
+  },
+  "response": {
+    "data": {
+      "searchAcrossEntities": {
+        "total": 9,
+        "searchResults": [
+          {
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)",
+              "type": "DATASET",
+              "name": "billing_ledger",
+              "platform": {
+                "name": "postgres"
+              }
+            }
+          },
+          {
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)",
+              "type": "DATASET",
+              "name": "care_events_live",
+              "platform": {
+                "name": "postgres"
+              }
+            }
+          },
+          {
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)",
+              "type": "DATASET",
+              "name": "claims_history",
+              "platform": {
+                "name": "postgres"
+              }
+            }
+          },
+          {
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+              "type": "DATASET",
+              "name": "lab_results",
+              "platform": {
+                "name": "postgres"
+              }
+            }
+          },
+          {
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.care_events_hourly_rollup,PROD)",
+              "type": "DATASET",
+              "name": "care_events_hourly_rollup",
+              "platform": {
+                "name": "dbt"
+              }
+            }
+          },
+          {
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.encounters_monthly_agg,PROD)",
+              "type": "DATASET",
+              "name": "encounters_monthly_agg",
+              "platform": {
+                "name": "dbt"
+              }
+            }
+          },
+          {
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.lab_abnormal_flags,PROD)",
+              "type": "DATASET",
+              "name": "lab_abnormal_flags",
+              "platform": {
+                "name": "dbt"
+              }
+            }
+          },
+          {
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,actuarial.reserving.claims_actuarial_snapshot,PROD)",
+              "type": "DATASET",
+              "name": "claims_actuarial_snapshot",
+              "platform": {
+                "name": "snowflake"
+              }
+            }
+          },
+          {
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+              "type": "DATASET",
+              "name": "patient_encounters",
+              "platform": {
+                "name": "postgres"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.414601+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDownstream",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)",
+    "count": 50
+  },
+  "response": {
+    "data": {
+      "searchAcrossLineage": {
+        "total": 5,
+        "searchResults": [
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dashboard:(superset,operations_command_dashboard)",
+              "type": "DASHBOARD",
+              "dashboardPlatform": {
+                "name": "superset"
+              },
+              "dashboardProperties": {
+                "name": "Operations Command Centre"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,ml_training,PROD),sepsis_risk_training)",
+              "type": "DATA_JOB",
+              "jobId": "sepsis_risk_training",
+              "dataJobProperties": {
+                "name": "sepsis_risk_model_v4_training"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.care_events_hourly_rollup,PROD)",
+              "type": "DATASET",
+              "name": "care_events_hourly_rollup",
+              "platform": {
+                "name": "dbt"
+              },
+              "datasetProperties": {
+                "name": "care_events_hourly_rollup",
+                "qualifiedName": "coldlineage.analytics.care_events_hourly_rollup"
+              }
+            }
+          },
+          {
+            "degree": 2,
+            "entity": {
+              "urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,sepsis_risk_model_v4,PROD)",
+              "type": "MLMODEL",
+              "mlModelName": "sepsis_risk_model_v4",
+              "mlModelPlatform": {
+                "name": "mlflow"
+              },
+              "mlModelProperties": {
+                "name": "Sepsis Risk Model v4"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:chart:(superset,unit_census_chart)",
+              "type": "CHART",
+              "chartPlatform": {
+                "name": "superset"
+              },
+              "chartProperties": {
+                "name": "Daily Unit Census"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

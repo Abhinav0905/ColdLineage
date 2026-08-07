@@ -1,0 +1,303 @@
+{
+  "id": 5,
+  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+  "name": "patient_encounters",
+  "platform": "postgres",
+  "domain": "Clinical Analytics",
+  "owners": [
+    "Maya Chen",
+    "Data Platform Team"
+  ],
+  "tags": [
+    "ColdLineageDemoEstate",
+    "PHI",
+    "PII",
+    "HIPAA",
+    "Tier2"
+  ],
+  "sensitive": true,
+  "row_count": 1100000,
+  "size_bytes": 178044928,
+  "date_column": "event_date",
+  "min_date": "2019-01-01",
+  "max_date": "2026-08-05",
+  "temperature": {
+    "recency_component": 41.9,
+    "frequency_component": 17.2,
+    "downstream_component": 18.0,
+    "criticality_component": 4.2,
+    "score": 81.3,
+    "classification": "HOT",
+    "inputs": {
+      "access_recency": "last query 1d ago -> 1.00 [datahub:usage]",
+      "query_frequency": "68 queries/30d -> 0.61 [datahub:usage]",
+      "downstream_dependencies": "7 active consumer(s) -> 1.00 [datahub:lineage]",
+      "business_criticality": "declared 0.35 [datahub:structured_properties]"
+    }
+  },
+  "archive_eligible": true,
+  "blockers": [],
+  "downstream_count": 7,
+  "archive_state": "HOT",
+  "archived_through": null,
+  "signals_live": true,
+  "context": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "name": "patient_encounters",
+    "platform": "postgres",
+    "qualified_table": "\"public\".\"patient_encounters\"",
+    "date_column": "event_date",
+    "date_column_provenance": {
+      "source": "datahub:structured_properties",
+      "detail": "declared as coldlineage.date_column",
+      "observed_at": "2026-08-07T02:54:03.264550Z"
+    },
+    "owners": [
+      "Maya Chen",
+      "Data Platform Team"
+    ],
+    "domain": "Clinical Analytics",
+    "tags": [
+      "ColdLineageDemoEstate",
+      "PHI",
+      "PII",
+      "HIPAA",
+      "Tier2"
+    ],
+    "glossary_terms": [
+      "ProtectedHealthInformation",
+      "ClinicalObservation"
+    ],
+    "deprecated": false,
+    "retention_years": 2.0,
+    "legal_hold": false,
+    "legal_hold_matter": null,
+    "business_criticality": 0.35,
+    "policy_provenance": {
+      "source": "datahub:structured_properties",
+      "detail": "3 io.coldlineage.policy.* value(s) read from the catalog",
+      "observed_at": "2026-08-07T02:54:03.314352Z"
+    },
+    "last_query_at": "2026-08-06T00:00:00Z",
+    "query_count_30d": 68,
+    "distinct_users_30d": 3,
+    "usage_observed": true,
+    "usage_provenance": {
+      "source": "datahub:usage",
+      "detail": "datasetUsageStatistics, 30-day window",
+      "observed_at": "2026-08-07T02:54:03.314356Z"
+    },
+    "downstream": [
+      {
+        "consumer_urn": "urn:li:dashboard:(superset,executive_kpi_dashboard)",
+        "consumer_name": "Executive KPI Dashboard",
+        "consumer_type": "DASHBOARD",
+        "platform": "superset",
+        "degree": 2,
+        "earliest_date_read": "2024-01-01",
+        "derivation": "not_a_query_consumer",
+        "predicate": null,
+        "evidence_sql": null,
+        "query_last_seen": null,
+        "query_run_count": null,
+        "provenance": {
+          "source": "datahub:lineage",
+          "detail": "reads the subject at 2 hops via an intermediate; inherits the earliest bound of its upstreams (2024-01-01)",
+          "observed_at": "2026-08-07T02:54:03.316650Z"
+        }
+      },
+      {
+        "consumer_urn": "urn:li:dashboard:(superset,quarterly_compliance_dashboard)",
+        "consumer_name": "Quarterly Compliance Dashboard",
+        "consumer_type": "DASHBOARD",
+        "platform": "superset",
+        "degree": 1,
+        "earliest_date_read": "2024-01-01",
+        "derivation": "sql_predicate",
+        "predicate": "e.event_date BETWEEN CAST('2024-01-01' AS DATE) AND CURRENT_DATE",
+        "evidence_sql": "SELECT e.region,\n       e.encounter_type,\n       date_trunc('quarter', e.event_date)::date AS quarter_start,\n       count(*)                                  AS encounters,\n       sum(e.total_charges)                      AS total_charges\nFROM public.patient_encounters e\nWHERE e.event_date BETWEEN DATE '2024-01-01' AND CURRENT_DATE\nGROUP BY 1, 2, 3\nORDER BY 3 DESC, 1",
+        "query_last_seen": null,
+        "query_run_count": 96,
+        "provenance": {
+          "source": "datahub:queries",
+          "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-patient_encounters-quarterly_compliance_dashboard)",
+          "observed_at": "2026-08-07T02:54:03.314731Z"
+        }
+      },
+      {
+        "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,clinical_pipelines,PROD),encounter_readmission_etl)",
+        "consumer_name": "encounter_readmission_etl",
+        "consumer_type": "DATA_JOB",
+        "platform": null,
+        "degree": 1,
+        "earliest_date_read": "2026-05-08",
+        "derivation": "sql_predicate",
+        "predicate": "e.event_date >= CURRENT_DATE - INTERVAL '90 DAYS'",
+        "evidence_sql": "SELECT e.patient_id,\n       e.event_date,\n       e.department,\n       e.length_of_stay_days,\n       lead(e.event_date) OVER (PARTITION BY e.patient_id ORDER BY e.event_date) AS next_event_date\nFROM public.patient_encounters e\nWHERE e.event_date >= CURRENT_DATE - INTERVAL '90 days'",
+        "query_last_seen": null,
+        "query_run_count": 365,
+        "provenance": {
+          "source": "datahub:queries",
+          "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-patient_encounters-encounter_readmission_etl)",
+          "observed_at": "2026-08-07T02:54:03.314898Z"
+        }
+      },
+      {
+        "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,ml_training,PROD),patient_ltv_training)",
+        "consumer_name": "patient_ltv_training",
+        "consumer_type": "DATA_JOB",
+        "platform": null,
+        "degree": 1,
+        "earliest_date_read": "2024-08-06",
+        "derivation": "sql_predicate",
+        "predicate": "e.event_date > CAST((CURRENT_TIMESTAMP - INTERVAL '24 MONTHS') AS DATE)",
+        "evidence_sql": "SELECT e.patient_id,\n       count(*)                   AS encounter_count,\n       sum(e.total_charges)       AS lifetime_charges,\n       avg(e.length_of_stay_days) AS avg_length_of_stay,\n       max(e.event_date)          AS last_seen\nFROM public.patient_encounters e\nWHERE e.event_date > (NOW() - INTERVAL '24 months')::date\nGROUP BY e.patient_id",
+        "query_last_seen": null,
+        "query_run_count": 48,
+        "provenance": {
+          "source": "datahub:queries",
+          "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-patient_encounters-patient_ltv_model)",
+          "observed_at": "2026-08-07T02:54:03.315068Z"
+        }
+      },
+      {
+        "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.encounters_monthly_agg,PROD)",
+        "consumer_name": "encounters_monthly_agg",
+        "consumer_type": "DATASET",
+        "platform": "dbt",
+        "degree": 1,
+        "earliest_date_read": "2025-02-01",
+        "derivation": "sql_predicate",
+        "predicate": "DATE_TRUNC('MONTH', e.event_date) >= DATE_TRUNC('MONTH', CURRENT_DATE - INTERVAL '18 MONTHS')",
+        "evidence_sql": "SELECT date_trunc('month', e.event_date)::date AS month_start,\n       e.department,\n       e.payer,\n       count(*)             AS encounters,\n       sum(e.total_charges) AS charges\nFROM public.patient_encounters e\nWHERE date_trunc('month', e.event_date) >= date_trunc('month', CURRENT_DATE - INTERVAL '18 months')\nGROUP BY 1, 2, 3",
+        "query_last_seen": null,
+        "query_run_count": 540,
+        "provenance": {
+          "source": "datahub:queries",
+          "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-patient_encounters-encounters_monthly_agg)",
+          "observed_at": "2026-08-07T02:54:03.315219Z"
+        }
+      },
+      {
+        "consumer_urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,patient_ltv_model,PROD)",
+        "consumer_name": "patient_ltv_model",
+        "consumer_type": "MLMODEL",
+        "platform": "mlflow",
+        "degree": 2,
+        "earliest_date_read": "2024-08-06",
+        "derivation": "sql_predicate",
+        "predicate": "e.event_date > CAST((CURRENT_TIMESTAMP - INTERVAL '24 MONTHS') AS DATE)",
+        "evidence_sql": "SELECT e.patient_id,\n       count(*)                   AS encounter_count,\n       sum(e.total_charges)       AS lifetime_charges,\n       avg(e.length_of_stay_days) AS avg_length_of_stay,\n       max(e.event_date)          AS last_seen\nFROM public.patient_encounters e\nWHERE e.event_date > (NOW() - INTERVAL '24 months')::date\nGROUP BY e.patient_id",
+        "query_last_seen": null,
+        "query_run_count": 48,
+        "provenance": {
+          "source": "datahub:queries",
+          "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-patient_encounters-patient_ltv_model)",
+          "observed_at": "2026-08-07T02:54:03.316513Z"
+        }
+      },
+      {
+        "consumer_urn": "urn:li:chart:(superset,care_gap_closure_chart)",
+        "consumer_name": "Care Gap Closure Rate",
+        "consumer_type": "CHART",
+        "platform": "superset",
+        "degree": 1,
+        "earliest_date_read": "2025-08-01",
+        "derivation": "sql_predicate",
+        "predicate": "e.event_date >= CAST('2025-08-01' AS DATE)",
+        "evidence_sql": "SELECT e.primary_diagnosis_code,\n       count(*) FILTER (WHERE e.encounter_type = 'preventive') AS preventive_encounters,\n       count(*)                                                AS total_encounters\nFROM public.patient_encounters e\nWHERE e.event_date >= DATE '2025-08-01'\nGROUP BY e.primary_diagnosis_code\nORDER BY total_encounters DESC\nLIMIT 25",
+        "query_last_seen": null,
+        "query_run_count": 1204,
+        "provenance": {
+          "source": "datahub:queries",
+          "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-patient_encounters-care_gap_closure_chart)",
+          "observed_at": "2026-08-07T02:54:03.316642Z"
+        }
+      }
+    ],
+    "row_count": 1100000,
+    "size_bytes": 178044928,
+    "min_date": "2019-01-01",
+    "max_date": "2026-08-05",
+    "physical_provenance": {
+      "source": "warehouse:postgres",
+      "detail": "count(*) and pg_total_relation_size on patient_encounters",
+      "observed_at": "2026-08-07T02:54:03.316665Z"
+    },
+    "sensitive": true
+  },
+  "evidence": [
+    {
+      "kind": "policy",
+      "label": "No active legal hold",
+      "status": "pass",
+      "provenance": {
+        "source": "datahub:structured_properties",
+        "detail": "3 io.coldlineage.policy.* value(s) read from the catalog",
+        "observed_at": "2026-08-07T02:54:03.314352Z"
+      }
+    },
+    {
+      "kind": "policy",
+      "label": "Retention floor 2y - cutoff must be on or before 2024-08-07",
+      "status": "pass",
+      "provenance": {
+        "source": "datahub:structured_properties",
+        "detail": "3 io.coldlineage.policy.* value(s) read from the catalog",
+        "observed_at": "2026-08-07T02:54:03.314352Z"
+      }
+    },
+    {
+      "kind": "schema",
+      "label": "Range column: event_date",
+      "status": "pass",
+      "provenance": {
+        "source": "datahub:structured_properties",
+        "detail": "declared as coldlineage.date_column",
+        "observed_at": "2026-08-07T02:54:03.264550Z"
+      }
+    },
+    {
+      "kind": "usage",
+      "label": "Last query 1d ago, 68 queries / 30d, 3 distinct users",
+      "status": "warn",
+      "provenance": {
+        "source": "datahub:usage",
+        "detail": "datasetUsageStatistics, 30-day window",
+        "observed_at": "2026-08-07T02:54:03.314356Z"
+      }
+    },
+    {
+      "kind": "lineage",
+      "label": "7 bounded consumer(s); earliest history read is 2024-01-01",
+      "status": "pass",
+      "provenance": {
+        "source": "datahub:lineage",
+        "detail": "reads the subject at 2 hops via an intermediate; inherits the earliest bound of its upstreams (2024-01-01)",
+        "observed_at": "2026-08-07T02:54:03.316650Z"
+      }
+    },
+    {
+      "kind": "classification",
+      "label": "Sensitive data (ColdLineageDemoEstate, PHI, PII) - access controls must be preserved on the archived object",
+      "status": "warn",
+      "provenance": {
+        "source": "datahub:structured_properties",
+        "detail": "3 io.coldlineage.policy.* value(s) read from the catalog",
+        "observed_at": "2026-08-07T02:54:03.314352Z"
+      }
+    },
+    {
+      "kind": "usage",
+      "label": "Table temperature 81.3 (HOT) - informational; range safety is decided per-cutoff by consumer windows",
+      "status": "warn",
+      "provenance": {
+        "source": "datahub:usage",
+        "detail": "datasetUsageStatistics, 30-day window",
+        "observed_at": "2026-08-07T02:54:03.314356Z"
+      }
+    }
+  ],
+  "confidence": 1.0,
+  "datahub_url": "http://localhost:9002/dataset/urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)/"
+}

@@ -1,0 +1,109 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.656591+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDownstream",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "count": 50
+  },
+  "response": {
+    "data": {
+      "searchAcrossLineage": {
+        "total": 7,
+        "searchResults": [
+          {
+            "degree": 2,
+            "entity": {
+              "urn": "urn:li:dashboard:(superset,executive_kpi_dashboard)",
+              "type": "DASHBOARD",
+              "dashboardPlatform": {
+                "name": "superset"
+              },
+              "dashboardProperties": {
+                "name": "Executive KPI Dashboard"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dashboard:(superset,quarterly_compliance_dashboard)",
+              "type": "DASHBOARD",
+              "dashboardPlatform": {
+                "name": "superset"
+              },
+              "dashboardProperties": {
+                "name": "Quarterly Compliance Dashboard"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,clinical_pipelines,PROD),encounter_readmission_etl)",
+              "type": "DATA_JOB",
+              "jobId": "encounter_readmission_etl",
+              "dataJobProperties": {
+                "name": "encounter_readmission_etl"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,ml_training,PROD),patient_ltv_training)",
+              "type": "DATA_JOB",
+              "jobId": "patient_ltv_training",
+              "dataJobProperties": {
+                "name": "patient_ltv_model_training"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.encounters_monthly_agg,PROD)",
+              "type": "DATASET",
+              "name": "encounters_monthly_agg",
+              "platform": {
+                "name": "dbt"
+              },
+              "datasetProperties": {
+                "name": "encounters_monthly_agg",
+                "qualifiedName": "coldlineage.analytics.encounters_monthly_agg"
+              }
+            }
+          },
+          {
+            "degree": 2,
+            "entity": {
+              "urn": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,patient_ltv_model,PROD)",
+              "type": "MLMODEL",
+              "mlModelName": "patient_ltv_model",
+              "mlModelPlatform": {
+                "name": "mlflow"
+              },
+              "mlModelProperties": {
+                "name": "Patient Lifetime Value Model"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:chart:(superset,care_gap_closure_chart)",
+              "type": "CHART",
+              "chartPlatform": {
+                "name": "superset"
+              },
+              "chartProperties": {
+                "name": "Care Gap Closure Rate"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

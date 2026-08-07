@@ -1,0 +1,17 @@
+{
+  "_about": "A real rehydration of the archived range. Every part is downloaded from object storage and its sha256 re-checked against the manifest before a single row is written back; a mismatch refuses the restore rather than loading unverified bytes. temporary=true lands the rows in a side table so the source is untouched; temporary=false appends them back into the source and resyncs the identity sequence.",
+  "recorded_at": "2026-08-07T02:55:22.308576+00:00",
+  "request": {
+    "run_id": 1,
+    "temporary": true
+  },
+  "response": {
+    "table": "restored_patient_encounters",
+    "rows": 516088,
+    "sha256": "654b75b9db4dff806433e85dfb0cfe3ed4e29a17fc1a0044c2f14e16b5f39bf5",
+    "verified": true,
+    "temporary": true
+  },
+  "manifest_sha256": "654b75b9db4dff806433e85dfb0cfe3ed4e29a17fc1a0044c2f14e16b5f39bf5",
+  "digests_checked": 11
+}

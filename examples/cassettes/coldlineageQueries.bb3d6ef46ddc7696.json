@@ -1,0 +1,274 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.356541+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageQueries",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)",
+    "count": 50
+  },
+  "response": {
+    "data": {
+      "listQueries": {
+        "total": 3,
+        "queries": [
+          {
+            "urn": "urn:li:query:coldlineage-billing_ledger-ar_aging_chart",
+            "properties": {
+              "name": "AR Aging Buckets -- billing_ledger",
+              "description": "Open balance by cost centre and age for unreconciled entries.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT b.cost_center,\n       CURRENT_DATE - b.posted_date                 AS age_days,\n       sum(b.debit_amount - b.credit_amount)        AS open_balance\nFROM public.billing_ledger b\nWHERE b.posted_date >= CURRENT_DATE - INTERVAL '90 days'\n  AND b.reconciled IS FALSE\nGROUP BY 1, 2",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1786000620000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1786000620000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "903"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "CHART"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:chart:(superset,ar_aging_chart)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-06T07:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "superset"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "AR Aging Buckets"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "ar_aging_chart"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "posted_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-billing_ledger-finance_close_dashboard",
+            "properties": {
+              "name": "Monthly Finance Close -- billing_ledger",
+              "description": "Close-package debits and credits by cost centre for the current fiscal year.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT b.cost_center,\n       b.gl_account,\n       sum(b.debit_amount)  AS debits,\n       sum(b.credit_amount) AS credits\nFROM public.billing_ledger b\nWHERE b.posted_date >= DATE '2025-08-01'\nGROUP BY 1, 2",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1785910620000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1785910620000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "620"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "DASHBOARD"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:dashboard:(superset,finance_close_dashboard)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-05T06:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "superset"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "Monthly Finance Close"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "finance_close_dashboard"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "posted_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-billing_ledger-revenue_recognition_job",
+            "properties": {
+              "name": "revenue_recognition_job -- billing_ledger",
+              "description": "Recognises revenue on reconciled entries posted in the current year.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT b.account_id,\n       b.invoice_number,\n       b.posted_date,\n       b.entry_type,\n       b.debit_amount - b.credit_amount AS net_amount\nFROM public.billing_ledger b\nWHERE b.posted_date BETWEEN DATE '2026-01-01' AND CURRENT_DATE\n  AND b.reconciled IS TRUE",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1785896220000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1785896220000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "218"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "DATA_JOB"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:dataJob:(urn:li:dataFlow:(airflow,finance_pipelines,PROD),revenue_recognition_job)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-05T02:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "airflow"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "revenue_recognition_job"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "revenue_recognition_job"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "posted_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

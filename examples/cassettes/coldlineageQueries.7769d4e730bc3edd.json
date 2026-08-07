@@ -1,0 +1,189 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.525437+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageQueries",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)",
+    "count": 50
+  },
+  "response": {
+    "data": {
+      "listQueries": {
+        "total": 2,
+        "queries": [
+          {
+            "urn": "urn:li:query:coldlineage-claims_history-annual_audit_extract",
+            "properties": {
+              "name": "annual_audit_extract -- claims_history",
+              "description": "Annual external-audit extract. Bounded, but bounded a long way back -- the audit scope opens at the 2019 plan year.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT c.claim_number,\n       c.member_id,\n       c.service_date,\n       c.adjudication_date,\n       c.claim_status,\n       c.billed_amount,\n       c.allowed_amount,\n       c.paid_amount,\n       c.provider_npi,\n       c.procedure_code\nFROM public.claims_history c\nWHERE c.service_date >= DATE '2019-01-01'\nORDER BY c.service_date",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1768439820000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1768439820000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "7"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "DATA_JOB"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),annual_audit_extract)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-01-15T01:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "airflow"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "annual_audit_extract"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "annual_audit_extract"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "service_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-claims_history-claims_denial_rate_chart",
+            "properties": {
+              "name": "Claims Denial Rate by Reason -- claims_history",
+              "description": "Monthly denial counts by CARC reason. Retired when claims moved platforms.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT date_trunc('month', c.service_date)::date AS month_start,\n       c.denial_reason,\n       count(*) AS denied_claims\nFROM public.claims_history c\nWHERE c.claim_status = 'DENIED'\n  AND c.service_date BETWEEN DATE '2023-01-01' AND CURRENT_DATE\nGROUP BY 1, 2",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1759141020000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1759141020000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "88"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "CHART"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:chart:(superset,claims_denial_rate_chart)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2025-09-29T10:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "superset"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "Claims Denial Rate by Reason"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "claims_denial_rate_chart"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "service_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

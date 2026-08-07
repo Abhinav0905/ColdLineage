@@ -145,9 +145,17 @@ class SimulationService:
 
         if blocking:
             # Report the hardest constraint first: a proven overlap beats an unproven one.
+            # Prefer a proven overlap over an unproven one, then the deepest overlap, then
+            # a consumer whose window came from parsed SQL over one that inherited a bound
+            # through lineage -- naming the directly evidenced consumer is both more
+            # honest and more useful, since an operator can go and read its query.
             binding = sorted(
                 blocking,
-                key=lambda i: (i.state != ImpactState.BLOCKED, i.headroom_days if i.headroom_days is not None else 0),
+                key=lambda i: (
+                    i.state != ImpactState.BLOCKED,
+                    i.headroom_days if i.headroom_days is not None else 0,
+                    i.window.derivation != WindowDerivation.SQL_PREDICATE,
+                ),
             )[0]
             if binding.state == ImpactState.BLOCKED:
                 rationale = (

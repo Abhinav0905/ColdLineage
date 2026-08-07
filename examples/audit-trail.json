@@ -1,0 +1,311 @@
+[
+  {
+    "id": 21,
+    "event_type": "RESTORE_COMPLETED",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "run_id": 1,
+      "table": "restored_patient_encounters",
+      "rows": 516088,
+      "sha256": "654b75b9db4dff806433e85dfb0cfe3ed4e29a17fc1a0044c2f14e16b5f39bf5",
+      "verified": true,
+      "temporary": true
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:55:22.303399+00:00"
+  },
+  {
+    "id": 20,
+    "event_type": "ARCHIVE_EXECUTED",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "recorded-run@coldlineage.local",
+    "detail": {
+      "run_id": 1,
+      "plan_hash": "b7f8e22ba2c23ecbf00ff32e2653862ef32cecbc16db40d2e2da1a6a617c9f5f",
+      "rows": 516088,
+      "bytes": 23253970,
+      "object_uri": "s3://coldlineage-archive/patient_encounters/2023-01-01/b7f8e22ba2c2/",
+      "sha256": "654b75b9db4dff806433e85dfb0cfe3ed4e29a17fc1a0044c2f14e16b5f39bf5",
+      "verification": {
+        "readback_sha256_match": true,
+        "readback_row_count": 516088,
+        "source_row_count": 516088,
+        "row_count_match": true,
+        "schema_match": true,
+        "passed": true,
+        "checked_at": "2026-08-07T02:54:09.250516Z"
+      },
+      "datahub": {
+        "mode": "live",
+        "written": true,
+        "operations": [
+          {
+            "op": "upsertStructuredProperties",
+            "target": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+            "status": "ok",
+            "detail": "6 typed properties written under io.coldlineage.archive.*"
+          },
+          {
+            "op": "updateDeprecation",
+            "target": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+            "status": "ok",
+            "detail": "deprecation note carries the cutoff and restore path"
+          },
+          {
+            "op": "addLink",
+            "target": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+            "status": "ok",
+            "detail": "s3://coldlineage-archive/patient_encounters/2023-01-01/b7f8e22ba2c2/manifest.json"
+          },
+          {
+            "op": "addTag",
+            "target": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+            "status": "ok",
+            "detail": "cold-tier-archived"
+          }
+        ],
+        "entity_url": "http://localhost:9002/dataset/urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)/"
+      }
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:10.563694+00:00"
+  },
+  {
+    "id": 19,
+    "event_type": "APPROVAL_RECORDED",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "recorded-run@coldlineage.local",
+    "detail": {
+      "plan_hash": "b7f8e22ba2c23ecbf00ff32e2653862ef32cecbc16db40d2e2da1a6a617c9f5f"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:05.002170+00:00"
+  },
+  {
+    "id": 18,
+    "event_type": "PLAN_ISSUED",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "plan_hash": "b7f8e22ba2c23ecbf00ff32e2653862ef32cecbc16db40d2e2da1a6a617c9f5f",
+      "cutoff_date": "2023-01-01",
+      "rows_in_scope": 516088,
+      "recommendation": "SAFE_TO_ARCHIVE",
+      "blockers": []
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.921110+00:00"
+  },
+  {
+    "id": 17,
+    "event_type": "PLAN_ISSUED",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "plan_hash": "91fce11818fe120cef867a056f60118c83cc7586e9359612b56ea53086bb2c5d",
+      "cutoff_date": "2020-01-01",
+      "rows_in_scope": 164911,
+      "recommendation": "DO_NOT_ARCHIVE",
+      "blockers": [
+        "LEGAL_HOLD",
+        "UNBOUNDED_CONSUMER",
+        "RETENTION_FLOOR"
+      ]
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.810449+00:00"
+  },
+  {
+    "id": 16,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2021-01-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.704483+00:00"
+  },
+  {
+    "id": 15,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2020-01-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.645052+00:00"
+  },
+  {
+    "id": 14,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2019-01-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.583573+00:00"
+  },
+  {
+    "id": 13,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2025-01-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.512138+00:00"
+  },
+  {
+    "id": 12,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2024-01-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.445104+00:00"
+  },
+  {
+    "id": 11,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2022-01-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.381615+00:00"
+  },
+  {
+    "id": 10,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2021-06-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.278640+00:00"
+  },
+  {
+    "id": 9,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2020-01-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.167283+00:00"
+  },
+  {
+    "id": 8,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2019-06-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:04.047060+00:00"
+  },
+  {
+    "id": 7,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2025-06-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:03.934746+00:00"
+  },
+  {
+    "id": 6,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2024-03-01",
+      "recommendation": "DO_NOT_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:03.858173+00:00"
+  },
+  {
+    "id": 5,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2024-01-01",
+      "recommendation": "ARCHIVE_WITH_REHYDRATION"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:03.766034+00:00"
+  },
+  {
+    "id": 4,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2023-11-15",
+      "recommendation": "ARCHIVE_WITH_REHYDRATION"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:03.678363+00:00"
+  },
+  {
+    "id": 3,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2023-01-01",
+      "recommendation": "SAFE_TO_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:03.581522+00:00"
+  },
+  {
+    "id": 2,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2022-01-01",
+      "recommendation": "SAFE_TO_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:03.487274+00:00"
+  },
+  {
+    "id": 1,
+    "event_type": "SIMULATION",
+    "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "actor": "coldlineage",
+    "detail": {
+      "cutoff_date": "2020-01-01",
+      "recommendation": "SAFE_TO_ARCHIVE"
+    },
+    "note": "",
+    "created_at": "2026-08-07T02:54:03.397912+00:00"
+  }
+]

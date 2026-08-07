@@ -1,0 +1,273 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.376369+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDataset",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)"
+  },
+  "response": {
+    "data": {
+      "dataset": {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)",
+        "name": "care_events_live",
+        "platform": {
+          "name": "postgres",
+          "properties": {
+            "displayName": "PostgreSQL"
+          }
+        },
+        "properties": {
+          "name": "care_events_live",
+          "qualifiedName": "coldlineage.public.care_events_live",
+          "description": "Real-time clinical event stream landed from bedside monitors and the EHR. Backs the operations command centre and the sepsis risk model.\n\nDemo role: CONTROL CASE -- genuinely hot. Correctly kept. Without a table that ColdLineage refuses to touch, a tool that archives everything looks clever.",
+          "customProperties": [
+            {
+              "key": "coldlineage.anchor_date",
+              "value": "2026-08-06"
+            },
+            {
+              "key": "coldlineage.synthetic",
+              "value": "true"
+            },
+            {
+              "key": "coldlineage.min_date",
+              "value": "2025-02-07"
+            },
+            {
+              "key": "coldlineage.qualified_table",
+              "value": "public.care_events_live"
+            },
+            {
+              "key": "coldlineage.measured_at",
+              "value": "2026-08-07T02:24:49.383676+00:00"
+            },
+            {
+              "key": "coldlineage.source",
+              "value": "coldlineage-demo-estate"
+            },
+            {
+              "key": "coldlineage.measured_row_count",
+              "value": "780000"
+            },
+            {
+              "key": "coldlineage.measured_total_bytes",
+              "value": "118251520"
+            },
+            {
+              "key": "coldlineage.max_date",
+              "value": "2026-08-05"
+            },
+            {
+              "key": "coldlineage.measured_index_bytes",
+              "value": "23216128"
+            },
+            {
+              "key": "coldlineage.date_column",
+              "value": "event_date"
+            },
+            {
+              "key": "coldlineage.measured_heap_bytes",
+              "value": "95027200"
+            },
+            {
+              "key": "coldlineage.measurement_method",
+              "value": "pg_total_relation_size / pg_relation_size / pg_indexes_size"
+            },
+            {
+              "key": "coldlineage.demo_role",
+              "value": "CONTROL CASE -- genuinely hot. Correctly kept. Without a table that ColdLineage refuses to touch, a tool that archives everything looks clever."
+            }
+          ]
+        },
+        "editableProperties": null,
+        "schemaMetadata": {
+          "name": "coldlineage.public.care_events_live",
+          "fields": [
+            {
+              "fieldPath": "event_id",
+              "nativeDataType": "bigint",
+              "type": "NUMBER",
+              "description": "Surrogate primary key."
+            },
+            {
+              "fieldPath": "patient_id",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Pseudonymous patient identifier."
+            },
+            {
+              "fieldPath": "event_ts",
+              "nativeDataType": "timestamp with time zone",
+              "type": "TIME",
+              "description": "Event timestamp to the second."
+            },
+            {
+              "fieldPath": "event_date",
+              "nativeDataType": "date",
+              "type": "DATE",
+              "description": "Event date, partition/range key."
+            },
+            {
+              "fieldPath": "event_type",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Clinical event category."
+            },
+            {
+              "fieldPath": "care_team",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Assigned care team."
+            },
+            {
+              "fieldPath": "severity",
+              "nativeDataType": "smallint",
+              "type": "NUMBER",
+              "description": "Triage severity 0-4, higher is worse."
+            },
+            {
+              "fieldPath": "acknowledged",
+              "nativeDataType": "boolean",
+              "type": "BOOLEAN",
+              "description": "Whether a clinician acknowledged the event."
+            },
+            {
+              "fieldPath": "unit",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Inpatient unit."
+            },
+            {
+              "fieldPath": "source_system",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Originating system."
+            }
+          ]
+        },
+        "ownership": {
+          "owners": [
+            {
+              "owner": {
+                "urn": "urn:li:corpuser:priya.shah",
+                "username": "priya.shah",
+                "properties": {
+                  "displayName": "Priya Shah",
+                  "email": "priya.shah@example-health.org"
+                }
+              },
+              "ownershipType": {
+                "urn": "urn:li:ownershipType:__system__business_owner",
+                "info": {
+                  "name": "Business Owner"
+                }
+              }
+            },
+            {
+              "owner": {
+                "urn": "urn:li:corpuser:data-platform",
+                "username": "data-platform",
+                "properties": {
+                  "displayName": "Data Platform Team",
+                  "email": "data-platform@example-health.org"
+                }
+              },
+              "ownershipType": {
+                "urn": "urn:li:ownershipType:__system__technical_owner",
+                "info": {
+                  "name": "Technical Owner"
+                }
+              }
+            }
+          ]
+        },
+        "domain": {
+          "domain": {
+            "urn": "urn:li:domain:clinical-operations",
+            "properties": {
+              "name": "Clinical Operations"
+            }
+          }
+        },
+        "tags": {
+          "tags": [
+            {
+              "tag": {
+                "urn": "urn:li:tag:ColdLineageDemoEstate",
+                "name": "ColdLineageDemoEstate",
+                "properties": {
+                  "name": "ColdLineageDemoEstate"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:PHI",
+                "name": "PHI",
+                "properties": {
+                  "name": "PHI"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:PII",
+                "name": "PII",
+                "properties": {
+                  "name": "PII"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:HIPAA",
+                "name": "HIPAA",
+                "properties": {
+                  "name": "HIPAA"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:Tier1",
+                "name": "Tier1",
+                "properties": {
+                  "name": "Tier1"
+                }
+              }
+            }
+          ]
+        },
+        "glossaryTerms": {
+          "terms": [
+            {
+              "term": {
+                "urn": "urn:li:glossaryTerm:ProtectedHealthInformation",
+                "name": "ProtectedHealthInformation",
+                "properties": {
+                  "name": "ProtectedHealthInformation"
+                }
+              }
+            },
+            {
+              "term": {
+                "urn": "urn:li:glossaryTerm:ClinicalObservation",
+                "name": "ClinicalObservation",
+                "properties": {
+                  "name": "ClinicalObservation"
+                }
+              }
+            }
+          ]
+        },
+        "deprecation": null,
+        "subTypes": {
+          "typeNames": [
+            "Table"
+          ]
+        }
+      }
+    },
+    "extensions": {}
+  }
+}

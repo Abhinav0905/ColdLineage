@@ -1,0 +1,597 @@
+{
+  "_about": "THE CASE THAT MAKES THE PRODUCT. Read this one first.\n\nlab_results is cold by every signal a catalog can offer: 0 queries and 0 distinct users in the last 30 days, 700,000 rows going back to 2019-03-01. Any age-based tiering job -- and any dataset-level 'this table is cold' check -- would move it tomorrow.\n\nIt cannot be archived at ANY cutoff. One downstream consumer, the HIPAA disclosure extract, runs a query that HAS a WHERE clause -- but the clause is `performing_lab IS NOT NULL`, not a date predicate. So it reads the entire history, every run, and every possible cutoff would truncate data it is still reading.\n\nFinding that requires parsing the consumer's actual SQL. A table-level temperature score cannot see it. Neither can a lineage edge: DataHub knows the extract depends on lab_results, and that is exactly as far as DataHub can go.\n\nNote what the system does NOT do: it does not silently drop a consumer it cannot bound. Everything unproven blocks. That is the difference between this and a cron job that deletes by age.",
+  "_what_to_look_at": [
+    "context.query_count_30d and distinct_users_30d -- the table-level signal says dead",
+    "temperature -- and why the score alone is not allowed to decide",
+    "the consumer with derivation 'no_date_filter' -- its evidence_sql has a WHERE clause and no date bound",
+    "cutoffs[*].recommendation -- DO_NOT_ARCHIVE at every single one"
+  ],
+  "recorded_at": "2026-08-07T02:54:04.513537+00:00",
+  "dataset": {
+    "id": 4,
+    "name": "lab_results",
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)"
+  },
+  "table_level_signals": {
+    "query_count_30d": 0,
+    "distinct_users_30d": 0,
+    "row_count": 700000,
+    "size_bytes": 116899840,
+    "min_date": "2019-03-01",
+    "max_date": "2026-07-31",
+    "temperature": {
+      "recency_component": 0.0,
+      "frequency_component": 0.0,
+      "downstream_component": 7.2,
+      "criticality_component": 3.6,
+      "score": 10.8,
+      "classification": "COLD",
+      "inputs": {
+        "access_recency": "no queries in the observed 30-day window -> 0.00 [datahub:usage]",
+        "query_frequency": "0 queries/30d -> 0.00 [datahub:usage]",
+        "downstream_dependencies": "2 active consumer(s), 1 unbounded -> 0.40 [datahub:lineage]",
+        "business_criticality": "declared 0.30 [datahub:structured_properties]"
+      }
+    },
+    "usage_provenance": {
+      "source": "datahub:usage",
+      "detail": "datasetUsageStatistics, 30-day window",
+      "observed_at": "2026-08-07T02:54:03.227914Z"
+    }
+  },
+  "the_unbounded_consumer": {
+    "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+    "consumer_name": "hipaa_lab_disclosure_extract",
+    "consumer_type": "DATA_JOB",
+    "platform": null,
+    "degree": 1,
+    "earliest_date_read": null,
+    "derivation": "no_date_filter",
+    "predicate": null,
+    "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+    "query_last_seen": null,
+    "query_run_count": 27,
+    "provenance": {
+      "source": "datahub:queries",
+      "detail": "no lower bound on the date column -- unbounded scan",
+      "observed_at": "2026-08-07T02:54:03.228125Z"
+    }
+  },
+  "blockers": [
+    {
+      "code": "UNBOUNDED_CONSUMER",
+      "message": "1 downstream consumer(s) read this table without a date predicate: hipaa_lab_disclosure_extract. No cutoff can be proven safe while an unbounded scan exists.",
+      "provenance": {
+        "source": "datahub:queries",
+        "detail": "no lower bound on the date column -- unbounded scan",
+        "observed_at": "2026-08-07T02:54:03.228125Z"
+      }
+    }
+  ],
+  "consumer_windows": [
+    {
+      "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+      "consumer_name": "hipaa_lab_disclosure_extract",
+      "consumer_type": "DATA_JOB",
+      "platform": null,
+      "degree": 1,
+      "earliest_date_read": null,
+      "derivation": "no_date_filter",
+      "predicate": null,
+      "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+      "query_last_seen": null,
+      "query_run_count": 27,
+      "provenance": {
+        "source": "datahub:queries",
+        "detail": "no lower bound on the date column -- unbounded scan",
+        "observed_at": "2026-08-07T02:54:03.228125Z"
+      }
+    },
+    {
+      "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.lab_abnormal_flags,PROD)",
+      "consumer_name": "lab_abnormal_flags",
+      "consumer_type": "DATASET",
+      "platform": "dbt",
+      "degree": 1,
+      "earliest_date_read": "2026-05-08",
+      "derivation": "sql_predicate",
+      "predicate": "r.collected_date >= CURRENT_DATE - INTERVAL '90 DAYS'",
+      "evidence_sql": "SELECT r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.reference_low,\n       r.reference_high,\n       r.abnormal_flag\nFROM public.lab_results r\nWHERE r.collected_date >= CURRENT_DATE - INTERVAL '90 days'\n  AND r.abnormal_flag <> 'N'",
+      "query_last_seen": null,
+      "query_run_count": 214,
+      "provenance": {
+        "source": "datahub:queries",
+        "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-lab_results-lab_abnormal_flags)",
+        "observed_at": "2026-08-07T02:54:03.228330Z"
+      }
+    }
+  ],
+  "cutoffs": [
+    {
+      "cutoff_date": "2019-06-01",
+      "recommendation": "DO_NOT_ARCHIVE",
+      "verdict": {
+        "cutoff_date": "2019-06-01",
+        "recommendation": "DO_NOT_ARCHIVE",
+        "consumers": [
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+              "consumer_name": "hipaa_lab_disclosure_extract",
+              "consumer_type": "DATA_JOB",
+              "platform": null,
+              "degree": 1,
+              "earliest_date_read": null,
+              "derivation": "no_date_filter",
+              "predicate": null,
+              "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+              "query_last_seen": null,
+              "query_run_count": 27,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "no lower bound on the date column -- unbounded scan",
+                "observed_at": "2026-08-07T02:54:04.030920Z"
+              }
+            },
+            "state": "unknown",
+            "headroom_days": null,
+            "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.lab_abnormal_flags,PROD)",
+              "consumer_name": "lab_abnormal_flags",
+              "consumer_type": "DATASET",
+              "platform": "dbt",
+              "degree": 1,
+              "earliest_date_read": "2026-05-08",
+              "derivation": "sql_predicate",
+              "predicate": "r.collected_date >= CURRENT_DATE - INTERVAL '90 DAYS'",
+              "evidence_sql": "SELECT r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.reference_low,\n       r.reference_high,\n       r.abnormal_flag\nFROM public.lab_results r\nWHERE r.collected_date >= CURRENT_DATE - INTERVAL '90 days'\n  AND r.abnormal_flag <> 'N'",
+              "query_last_seen": null,
+              "query_run_count": 214,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-lab_results-lab_abnormal_flags)",
+                "observed_at": "2026-08-07T02:54:04.031133Z"
+              }
+            },
+            "state": "safe",
+            "headroom_days": 2533,
+            "reason": "reads back to 2026-05-08; clears the cutoff by 6 years"
+          }
+        ],
+        "binding_constraint": {
+          "window": {
+            "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+            "consumer_name": "hipaa_lab_disclosure_extract",
+            "consumer_type": "DATA_JOB",
+            "platform": null,
+            "degree": 1,
+            "earliest_date_read": null,
+            "derivation": "no_date_filter",
+            "predicate": null,
+            "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+            "query_last_seen": null,
+            "query_run_count": 27,
+            "provenance": {
+              "source": "datahub:queries",
+              "detail": "no lower bound on the date column -- unbounded scan",
+              "observed_at": "2026-08-07T02:54:04.030920Z"
+            }
+          },
+          "state": "unknown",
+          "headroom_days": null,
+          "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+        },
+        "headroom_days": null,
+        "rationale": "Blocked by hipaa_lab_disclosure_extract (data_job): reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads. No cutoff can be proven safe while an unbounded consumer exists. Bound its query with a date predicate, or archive with rehydration on demand."
+      }
+    },
+    {
+      "cutoff_date": "2020-01-01",
+      "recommendation": "DO_NOT_ARCHIVE",
+      "verdict": {
+        "cutoff_date": "2020-01-01",
+        "recommendation": "DO_NOT_ARCHIVE",
+        "consumers": [
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+              "consumer_name": "hipaa_lab_disclosure_extract",
+              "consumer_type": "DATA_JOB",
+              "platform": null,
+              "degree": 1,
+              "earliest_date_read": null,
+              "derivation": "no_date_filter",
+              "predicate": null,
+              "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+              "query_last_seen": null,
+              "query_run_count": 27,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "no lower bound on the date column -- unbounded scan",
+                "observed_at": "2026-08-07T02:54:04.147757Z"
+              }
+            },
+            "state": "unknown",
+            "headroom_days": null,
+            "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.lab_abnormal_flags,PROD)",
+              "consumer_name": "lab_abnormal_flags",
+              "consumer_type": "DATASET",
+              "platform": "dbt",
+              "degree": 1,
+              "earliest_date_read": "2026-05-08",
+              "derivation": "sql_predicate",
+              "predicate": "r.collected_date >= CURRENT_DATE - INTERVAL '90 DAYS'",
+              "evidence_sql": "SELECT r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.reference_low,\n       r.reference_high,\n       r.abnormal_flag\nFROM public.lab_results r\nWHERE r.collected_date >= CURRENT_DATE - INTERVAL '90 days'\n  AND r.abnormal_flag <> 'N'",
+              "query_last_seen": null,
+              "query_run_count": 214,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-lab_results-lab_abnormal_flags)",
+                "observed_at": "2026-08-07T02:54:04.147975Z"
+              }
+            },
+            "state": "safe",
+            "headroom_days": 2319,
+            "reason": "reads back to 2026-05-08; clears the cutoff by 6 years"
+          }
+        ],
+        "binding_constraint": {
+          "window": {
+            "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+            "consumer_name": "hipaa_lab_disclosure_extract",
+            "consumer_type": "DATA_JOB",
+            "platform": null,
+            "degree": 1,
+            "earliest_date_read": null,
+            "derivation": "no_date_filter",
+            "predicate": null,
+            "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+            "query_last_seen": null,
+            "query_run_count": 27,
+            "provenance": {
+              "source": "datahub:queries",
+              "detail": "no lower bound on the date column -- unbounded scan",
+              "observed_at": "2026-08-07T02:54:04.147757Z"
+            }
+          },
+          "state": "unknown",
+          "headroom_days": null,
+          "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+        },
+        "headroom_days": null,
+        "rationale": "Blocked by hipaa_lab_disclosure_extract (data_job): reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads. No cutoff can be proven safe while an unbounded consumer exists. Bound its query with a date predicate, or archive with rehydration on demand."
+      }
+    },
+    {
+      "cutoff_date": "2021-06-01",
+      "recommendation": "DO_NOT_ARCHIVE",
+      "verdict": {
+        "cutoff_date": "2021-06-01",
+        "recommendation": "DO_NOT_ARCHIVE",
+        "consumers": [
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+              "consumer_name": "hipaa_lab_disclosure_extract",
+              "consumer_type": "DATA_JOB",
+              "platform": null,
+              "degree": 1,
+              "earliest_date_read": null,
+              "derivation": "no_date_filter",
+              "predicate": null,
+              "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+              "query_last_seen": null,
+              "query_run_count": 27,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "no lower bound on the date column -- unbounded scan",
+                "observed_at": "2026-08-07T02:54:04.262462Z"
+              }
+            },
+            "state": "unknown",
+            "headroom_days": null,
+            "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.lab_abnormal_flags,PROD)",
+              "consumer_name": "lab_abnormal_flags",
+              "consumer_type": "DATASET",
+              "platform": "dbt",
+              "degree": 1,
+              "earliest_date_read": "2026-05-08",
+              "derivation": "sql_predicate",
+              "predicate": "r.collected_date >= CURRENT_DATE - INTERVAL '90 DAYS'",
+              "evidence_sql": "SELECT r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.reference_low,\n       r.reference_high,\n       r.abnormal_flag\nFROM public.lab_results r\nWHERE r.collected_date >= CURRENT_DATE - INTERVAL '90 days'\n  AND r.abnormal_flag <> 'N'",
+              "query_last_seen": null,
+              "query_run_count": 214,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-lab_results-lab_abnormal_flags)",
+                "observed_at": "2026-08-07T02:54:04.262662Z"
+              }
+            },
+            "state": "safe",
+            "headroom_days": 1802,
+            "reason": "reads back to 2026-05-08; clears the cutoff by 4 years"
+          }
+        ],
+        "binding_constraint": {
+          "window": {
+            "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+            "consumer_name": "hipaa_lab_disclosure_extract",
+            "consumer_type": "DATA_JOB",
+            "platform": null,
+            "degree": 1,
+            "earliest_date_read": null,
+            "derivation": "no_date_filter",
+            "predicate": null,
+            "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+            "query_last_seen": null,
+            "query_run_count": 27,
+            "provenance": {
+              "source": "datahub:queries",
+              "detail": "no lower bound on the date column -- unbounded scan",
+              "observed_at": "2026-08-07T02:54:04.262462Z"
+            }
+          },
+          "state": "unknown",
+          "headroom_days": null,
+          "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+        },
+        "headroom_days": null,
+        "rationale": "Blocked by hipaa_lab_disclosure_extract (data_job): reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads. No cutoff can be proven safe while an unbounded consumer exists. Bound its query with a date predicate, or archive with rehydration on demand."
+      }
+    },
+    {
+      "cutoff_date": "2022-01-01",
+      "recommendation": "DO_NOT_ARCHIVE",
+      "verdict": {
+        "cutoff_date": "2022-01-01",
+        "recommendation": "DO_NOT_ARCHIVE",
+        "consumers": [
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+              "consumer_name": "hipaa_lab_disclosure_extract",
+              "consumer_type": "DATA_JOB",
+              "platform": null,
+              "degree": 1,
+              "earliest_date_read": null,
+              "derivation": "no_date_filter",
+              "predicate": null,
+              "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+              "query_last_seen": null,
+              "query_run_count": 27,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "no lower bound on the date column -- unbounded scan",
+                "observed_at": "2026-08-07T02:54:04.366952Z"
+              }
+            },
+            "state": "unknown",
+            "headroom_days": null,
+            "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.lab_abnormal_flags,PROD)",
+              "consumer_name": "lab_abnormal_flags",
+              "consumer_type": "DATASET",
+              "platform": "dbt",
+              "degree": 1,
+              "earliest_date_read": "2026-05-08",
+              "derivation": "sql_predicate",
+              "predicate": "r.collected_date >= CURRENT_DATE - INTERVAL '90 DAYS'",
+              "evidence_sql": "SELECT r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.reference_low,\n       r.reference_high,\n       r.abnormal_flag\nFROM public.lab_results r\nWHERE r.collected_date >= CURRENT_DATE - INTERVAL '90 days'\n  AND r.abnormal_flag <> 'N'",
+              "query_last_seen": null,
+              "query_run_count": 214,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-lab_results-lab_abnormal_flags)",
+                "observed_at": "2026-08-07T02:54:04.367169Z"
+              }
+            },
+            "state": "safe",
+            "headroom_days": 1588,
+            "reason": "reads back to 2026-05-08; clears the cutoff by 4 years"
+          }
+        ],
+        "binding_constraint": {
+          "window": {
+            "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+            "consumer_name": "hipaa_lab_disclosure_extract",
+            "consumer_type": "DATA_JOB",
+            "platform": null,
+            "degree": 1,
+            "earliest_date_read": null,
+            "derivation": "no_date_filter",
+            "predicate": null,
+            "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+            "query_last_seen": null,
+            "query_run_count": 27,
+            "provenance": {
+              "source": "datahub:queries",
+              "detail": "no lower bound on the date column -- unbounded scan",
+              "observed_at": "2026-08-07T02:54:04.366952Z"
+            }
+          },
+          "state": "unknown",
+          "headroom_days": null,
+          "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+        },
+        "headroom_days": null,
+        "rationale": "Blocked by hipaa_lab_disclosure_extract (data_job): reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads. No cutoff can be proven safe while an unbounded consumer exists. Bound its query with a date predicate, or archive with rehydration on demand."
+      }
+    },
+    {
+      "cutoff_date": "2024-01-01",
+      "recommendation": "DO_NOT_ARCHIVE",
+      "verdict": {
+        "cutoff_date": "2024-01-01",
+        "recommendation": "DO_NOT_ARCHIVE",
+        "consumers": [
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+              "consumer_name": "hipaa_lab_disclosure_extract",
+              "consumer_type": "DATA_JOB",
+              "platform": null,
+              "degree": 1,
+              "earliest_date_read": null,
+              "derivation": "no_date_filter",
+              "predicate": null,
+              "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+              "query_last_seen": null,
+              "query_run_count": 27,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "no lower bound on the date column -- unbounded scan",
+                "observed_at": "2026-08-07T02:54:04.431613Z"
+              }
+            },
+            "state": "unknown",
+            "headroom_days": null,
+            "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.lab_abnormal_flags,PROD)",
+              "consumer_name": "lab_abnormal_flags",
+              "consumer_type": "DATASET",
+              "platform": "dbt",
+              "degree": 1,
+              "earliest_date_read": "2026-05-08",
+              "derivation": "sql_predicate",
+              "predicate": "r.collected_date >= CURRENT_DATE - INTERVAL '90 DAYS'",
+              "evidence_sql": "SELECT r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.reference_low,\n       r.reference_high,\n       r.abnormal_flag\nFROM public.lab_results r\nWHERE r.collected_date >= CURRENT_DATE - INTERVAL '90 days'\n  AND r.abnormal_flag <> 'N'",
+              "query_last_seen": null,
+              "query_run_count": 214,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-lab_results-lab_abnormal_flags)",
+                "observed_at": "2026-08-07T02:54:04.431834Z"
+              }
+            },
+            "state": "safe",
+            "headroom_days": 858,
+            "reason": "reads back to 2026-05-08; clears the cutoff by 2 years"
+          }
+        ],
+        "binding_constraint": {
+          "window": {
+            "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+            "consumer_name": "hipaa_lab_disclosure_extract",
+            "consumer_type": "DATA_JOB",
+            "platform": null,
+            "degree": 1,
+            "earliest_date_read": null,
+            "derivation": "no_date_filter",
+            "predicate": null,
+            "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+            "query_last_seen": null,
+            "query_run_count": 27,
+            "provenance": {
+              "source": "datahub:queries",
+              "detail": "no lower bound on the date column -- unbounded scan",
+              "observed_at": "2026-08-07T02:54:04.431613Z"
+            }
+          },
+          "state": "unknown",
+          "headroom_days": null,
+          "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+        },
+        "headroom_days": null,
+        "rationale": "Blocked by hipaa_lab_disclosure_extract (data_job): reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads. No cutoff can be proven safe while an unbounded consumer exists. Bound its query with a date predicate, or archive with rehydration on demand."
+      }
+    },
+    {
+      "cutoff_date": "2025-01-01",
+      "recommendation": "DO_NOT_ARCHIVE",
+      "verdict": {
+        "cutoff_date": "2025-01-01",
+        "recommendation": "DO_NOT_ARCHIVE",
+        "consumers": [
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+              "consumer_name": "hipaa_lab_disclosure_extract",
+              "consumer_type": "DATA_JOB",
+              "platform": null,
+              "degree": 1,
+              "earliest_date_read": null,
+              "derivation": "no_date_filter",
+              "predicate": null,
+              "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+              "query_last_seen": null,
+              "query_run_count": 27,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "no lower bound on the date column -- unbounded scan",
+                "observed_at": "2026-08-07T02:54:04.499485Z"
+              }
+            },
+            "state": "unknown",
+            "headroom_days": null,
+            "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.lab_abnormal_flags,PROD)",
+              "consumer_name": "lab_abnormal_flags",
+              "consumer_type": "DATASET",
+              "platform": "dbt",
+              "degree": 1,
+              "earliest_date_read": "2026-05-08",
+              "derivation": "sql_predicate",
+              "predicate": "r.collected_date >= CURRENT_DATE - INTERVAL '90 DAYS'",
+              "evidence_sql": "SELECT r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.reference_low,\n       r.reference_high,\n       r.abnormal_flag\nFROM public.lab_results r\nWHERE r.collected_date >= CURRENT_DATE - INTERVAL '90 days'\n  AND r.abnormal_flag <> 'N'",
+              "query_last_seen": null,
+              "query_run_count": 214,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-lab_results-lab_abnormal_flags)",
+                "observed_at": "2026-08-07T02:54:04.499681Z"
+              }
+            },
+            "state": "safe",
+            "headroom_days": 492,
+            "reason": "reads back to 2026-05-08; clears the cutoff by 16 months"
+          }
+        ],
+        "binding_constraint": {
+          "window": {
+            "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+            "consumer_name": "hipaa_lab_disclosure_extract",
+            "consumer_type": "DATA_JOB",
+            "platform": null,
+            "degree": 1,
+            "earliest_date_read": null,
+            "derivation": "no_date_filter",
+            "predicate": null,
+            "evidence_sql": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+            "query_last_seen": null,
+            "query_run_count": 27,
+            "provenance": {
+              "source": "datahub:queries",
+              "detail": "no lower bound on the date column -- unbounded scan",
+              "observed_at": "2026-08-07T02:54:04.499485Z"
+            }
+          },
+          "state": "unknown",
+          "headroom_days": null,
+          "reason": "reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads"
+        },
+        "headroom_days": null,
+        "rationale": "Blocked by hipaa_lab_disclosure_extract (data_job): reads the table with no date predicate -- an unbounded scan, so every cutoff would truncate data it reads. No cutoff can be proven safe while an unbounded consumer exists. Bound its query with a date predicate, or archive with rehydration on demand."
+      }
+    }
+  ]
+}

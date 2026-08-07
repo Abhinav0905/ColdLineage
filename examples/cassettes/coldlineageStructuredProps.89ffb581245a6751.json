@@ -1,0 +1,71 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.386840+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageStructuredProps",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)"
+  },
+  "response": {
+    "data": {
+      "dataset": {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)",
+        "structuredProperties": {
+          "properties": [
+            {
+              "structuredProperty": {
+                "urn": "urn:li:structuredProperty:io.coldlineage.policy.retentionYears",
+                "definition": {
+                  "qualifiedName": "io.coldlineage.policy.retentionYears",
+                  "displayName": "Retention Floor (years)",
+                  "valueType": {
+                    "urn": "urn:li:dataType:datahub.number"
+                  }
+                }
+              },
+              "values": [
+                {
+                  "numberValue": 2.0
+                }
+              ]
+            },
+            {
+              "structuredProperty": {
+                "urn": "urn:li:structuredProperty:io.coldlineage.policy.legalHold",
+                "definition": {
+                  "qualifiedName": "io.coldlineage.policy.legalHold",
+                  "displayName": "Legal Hold",
+                  "valueType": {
+                    "urn": "urn:li:dataType:datahub.string"
+                  }
+                }
+              },
+              "values": [
+                {
+                  "stringValue": "NONE"
+                }
+              ]
+            },
+            {
+              "structuredProperty": {
+                "urn": "urn:li:structuredProperty:io.coldlineage.policy.businessCriticality",
+                "definition": {
+                  "qualifiedName": "io.coldlineage.policy.businessCriticality",
+                  "displayName": "Business Criticality",
+                  "valueType": {
+                    "urn": "urn:li:dataType:datahub.number"
+                  }
+                }
+              },
+              "values": [
+                {
+                  "numberValue": 0.95
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "extensions": {}
+  }
+}

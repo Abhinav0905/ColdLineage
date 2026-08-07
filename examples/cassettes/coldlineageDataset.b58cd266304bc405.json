@@ -1,0 +1,300 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.539763+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDataset",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)"
+  },
+  "response": {
+    "data": {
+      "dataset": {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+        "name": "lab_results",
+        "platform": {
+          "name": "postgres",
+          "properties": {
+            "displayName": "PostgreSQL"
+          }
+        },
+        "properties": {
+          "name": "lab_results",
+          "qualifiedName": "coldlineage.public.lab_results",
+          "description": "Resulted laboratory observations, one row per analyte per specimen. Feeds a retired abnormal-flag pipeline and the quarterly HIPAA disclosure extract.\n\nDemo role: KILLER CASE -- zero queries in 30 days and zero distinct users, so every dataset-level tiering tool archives it. WRONG: the quarterly HIPAA disclosure extract is an unbounded full-table scan reaching back to 2019, so no cutoff is safe. Only consumer-level SQL analysis can see this.",
+          "customProperties": [
+            {
+              "key": "coldlineage.anchor_date",
+              "value": "2026-08-06"
+            },
+            {
+              "key": "coldlineage.synthetic",
+              "value": "true"
+            },
+            {
+              "key": "coldlineage.min_date",
+              "value": "2019-03-01"
+            },
+            {
+              "key": "coldlineage.qualified_table",
+              "value": "public.lab_results"
+            },
+            {
+              "key": "coldlineage.measured_at",
+              "value": "2026-08-07T02:24:49.429622+00:00"
+            },
+            {
+              "key": "coldlineage.source",
+              "value": "coldlineage-demo-estate"
+            },
+            {
+              "key": "coldlineage.measured_row_count",
+              "value": "700000"
+            },
+            {
+              "key": "coldlineage.measured_total_bytes",
+              "value": "116899840"
+            },
+            {
+              "key": "coldlineage.max_date",
+              "value": "2026-07-31"
+            },
+            {
+              "key": "coldlineage.measured_index_bytes",
+              "value": "20815872"
+            },
+            {
+              "key": "coldlineage.date_column",
+              "value": "collected_date"
+            },
+            {
+              "key": "coldlineage.measured_heap_bytes",
+              "value": "96075776"
+            },
+            {
+              "key": "coldlineage.measurement_method",
+              "value": "pg_total_relation_size / pg_relation_size / pg_indexes_size"
+            },
+            {
+              "key": "coldlineage.demo_role",
+              "value": "KILLER CASE -- zero queries in 30 days and zero distinct users, so every dataset-level tiering tool archives it. WRONG: the quarterly HIPAA disclosure extract is an unbounded full-table scan reaching back to 2019, so no cutoff is safe. Only consumer-level SQL analysis can see this."
+            }
+          ]
+        },
+        "editableProperties": null,
+        "schemaMetadata": {
+          "name": "coldlineage.public.lab_results",
+          "fields": [
+            {
+              "fieldPath": "result_id",
+              "nativeDataType": "bigint",
+              "type": "NUMBER",
+              "description": "Surrogate primary key."
+            },
+            {
+              "fieldPath": "patient_id",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Pseudonymous patient identifier."
+            },
+            {
+              "fieldPath": "specimen_id",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Accession number of the specimen."
+            },
+            {
+              "fieldPath": "collected_date",
+              "nativeDataType": "date",
+              "type": "DATE",
+              "description": "Specimen collection date. Range key."
+            },
+            {
+              "fieldPath": "resulted_at",
+              "nativeDataType": "timestamp with time zone",
+              "type": "TIME",
+              "description": "Time the result was released."
+            },
+            {
+              "fieldPath": "loinc_code",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "LOINC code for the observation."
+            },
+            {
+              "fieldPath": "analyte",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Human-readable analyte name."
+            },
+            {
+              "fieldPath": "result_value",
+              "nativeDataType": "numeric(12,3)",
+              "type": "NUMBER",
+              "description": "Numeric result value."
+            },
+            {
+              "fieldPath": "result_units",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Units of measure."
+            },
+            {
+              "fieldPath": "reference_low",
+              "nativeDataType": "numeric(12,3)",
+              "type": "NUMBER",
+              "description": "Lower reference bound."
+            },
+            {
+              "fieldPath": "reference_high",
+              "nativeDataType": "numeric(12,3)",
+              "type": "NUMBER",
+              "description": "Upper reference bound."
+            },
+            {
+              "fieldPath": "abnormal_flag",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "HL7 abnormal flag; N is normal."
+            },
+            {
+              "fieldPath": "performing_lab",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Lab that performed the assay."
+            }
+          ]
+        },
+        "ownership": {
+          "owners": [
+            {
+              "owner": {
+                "urn": "urn:li:corpuser:dana.okafor",
+                "username": "dana.okafor",
+                "properties": {
+                  "displayName": "Dana Okafor",
+                  "email": "dana.okafor@example-health.org"
+                }
+              },
+              "ownershipType": {
+                "urn": "urn:li:ownershipType:__system__business_owner",
+                "info": {
+                  "name": "Business Owner"
+                }
+              }
+            },
+            {
+              "owner": {
+                "urn": "urn:li:corpuser:data-platform",
+                "username": "data-platform",
+                "properties": {
+                  "displayName": "Data Platform Team",
+                  "email": "data-platform@example-health.org"
+                }
+              },
+              "ownershipType": {
+                "urn": "urn:li:ownershipType:__system__technical_owner",
+                "info": {
+                  "name": "Technical Owner"
+                }
+              }
+            }
+          ]
+        },
+        "domain": {
+          "domain": {
+            "urn": "urn:li:domain:clinical-diagnostics",
+            "properties": {
+              "name": "Clinical Diagnostics"
+            }
+          }
+        },
+        "tags": {
+          "tags": [
+            {
+              "tag": {
+                "urn": "urn:li:tag:ColdLineageDemoEstate",
+                "name": "ColdLineageDemoEstate",
+                "properties": {
+                  "name": "ColdLineageDemoEstate"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:PHI",
+                "name": "PHI",
+                "properties": {
+                  "name": "PHI"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:PII",
+                "name": "PII",
+                "properties": {
+                  "name": "PII"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:HIPAA",
+                "name": "HIPAA",
+                "properties": {
+                  "name": "HIPAA"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:RegulatoryReporting",
+                "name": "RegulatoryReporting",
+                "properties": {
+                  "name": "RegulatoryReporting"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:Tier3",
+                "name": "Tier3",
+                "properties": {
+                  "name": "Tier3"
+                }
+              }
+            }
+          ]
+        },
+        "glossaryTerms": {
+          "terms": [
+            {
+              "term": {
+                "urn": "urn:li:glossaryTerm:ProtectedHealthInformation",
+                "name": "ProtectedHealthInformation",
+                "properties": {
+                  "name": "ProtectedHealthInformation"
+                }
+              }
+            },
+            {
+              "term": {
+                "urn": "urn:li:glossaryTerm:ClinicalObservation",
+                "name": "ClinicalObservation",
+                "properties": {
+                  "name": "ClinicalObservation"
+                }
+              }
+            }
+          ]
+        },
+        "deprecation": null,
+        "subTypes": {
+          "typeNames": [
+            "Table"
+          ]
+        }
+      }
+    },
+    "extensions": {}
+  }
+}

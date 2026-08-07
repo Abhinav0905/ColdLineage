@@ -1,0 +1,261 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.277644+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDataset",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)"
+  },
+  "response": {
+    "data": {
+      "dataset": {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)",
+        "name": "billing_ledger",
+        "platform": {
+          "name": "postgres",
+          "properties": {
+            "displayName": "PostgreSQL"
+          }
+        },
+        "properties": {
+          "name": "billing_ledger",
+          "qualifiedName": "coldlineage.public.billing_ledger",
+          "description": "General-ledger postings for patient revenue and cost centres. Source of record for the finance close and AR aging.\n\nDemo role: RETENTION FLOOR -- consumers only need 90 days, so range analysis would allow a 2022 cutoff, but the 7-year retention floor declared in DataHub makes anything newer than the floor illegal. Shows the cutoff itself is the decision variable.",
+          "customProperties": [
+            {
+              "key": "coldlineage.anchor_date",
+              "value": "2026-08-06"
+            },
+            {
+              "key": "coldlineage.synthetic",
+              "value": "true"
+            },
+            {
+              "key": "coldlineage.min_date",
+              "value": "2016-01-01"
+            },
+            {
+              "key": "coldlineage.qualified_table",
+              "value": "public.billing_ledger"
+            },
+            {
+              "key": "coldlineage.measured_at",
+              "value": "2026-08-07T02:24:49.444383+00:00"
+            },
+            {
+              "key": "coldlineage.source",
+              "value": "coldlineage-demo-estate"
+            },
+            {
+              "key": "coldlineage.measured_row_count",
+              "value": "450000"
+            },
+            {
+              "key": "coldlineage.measured_total_bytes",
+              "value": "73859072"
+            },
+            {
+              "key": "coldlineage.max_date",
+              "value": "2026-08-05"
+            },
+            {
+              "key": "coldlineage.measured_index_bytes",
+              "value": "13361152"
+            },
+            {
+              "key": "coldlineage.date_column",
+              "value": "posted_date"
+            },
+            {
+              "key": "coldlineage.measured_heap_bytes",
+              "value": "60489728"
+            },
+            {
+              "key": "coldlineage.measurement_method",
+              "value": "pg_total_relation_size / pg_relation_size / pg_indexes_size"
+            },
+            {
+              "key": "coldlineage.demo_role",
+              "value": "RETENTION FLOOR -- consumers only need 90 days, so range analysis would allow a 2022 cutoff, but the 7-year retention floor declared in DataHub makes anything newer than the floor illegal. Shows the cutoff itself is the decision variable."
+            }
+          ]
+        },
+        "editableProperties": null,
+        "schemaMetadata": {
+          "name": "coldlineage.public.billing_ledger",
+          "fields": [
+            {
+              "fieldPath": "entry_id",
+              "nativeDataType": "bigint",
+              "type": "NUMBER",
+              "description": "Surrogate primary key."
+            },
+            {
+              "fieldPath": "account_id",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Patient account identifier."
+            },
+            {
+              "fieldPath": "posted_date",
+              "nativeDataType": "date",
+              "type": "DATE",
+              "description": "GL posting date. Range key."
+            },
+            {
+              "fieldPath": "gl_account",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "General-ledger account."
+            },
+            {
+              "fieldPath": "entry_type",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Ledger entry classification."
+            },
+            {
+              "fieldPath": "debit_amount",
+              "nativeDataType": "numeric(14,2)",
+              "type": "NUMBER",
+              "description": "Debit side of the entry."
+            },
+            {
+              "fieldPath": "credit_amount",
+              "nativeDataType": "numeric(14,2)",
+              "type": "NUMBER",
+              "description": "Credit side of the entry."
+            },
+            {
+              "fieldPath": "currency",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "ISO 4217 currency code."
+            },
+            {
+              "fieldPath": "cost_center",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Owning cost centre."
+            },
+            {
+              "fieldPath": "invoice_number",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Invoice the entry belongs to."
+            },
+            {
+              "fieldPath": "reconciled",
+              "nativeDataType": "boolean",
+              "type": "BOOLEAN",
+              "description": "Whether the entry has been reconciled."
+            }
+          ]
+        },
+        "ownership": {
+          "owners": [
+            {
+              "owner": {
+                "urn": "urn:li:corpuser:sam.ruiz",
+                "username": "sam.ruiz",
+                "properties": {
+                  "displayName": "Sam Ruiz",
+                  "email": "sam.ruiz@example-health.org"
+                }
+              },
+              "ownershipType": {
+                "urn": "urn:li:ownershipType:__system__business_owner",
+                "info": {
+                  "name": "Business Owner"
+                }
+              }
+            },
+            {
+              "owner": {
+                "urn": "urn:li:corpuser:data-platform",
+                "username": "data-platform",
+                "properties": {
+                  "displayName": "Data Platform Team",
+                  "email": "data-platform@example-health.org"
+                }
+              },
+              "ownershipType": {
+                "urn": "urn:li:ownershipType:__system__technical_owner",
+                "info": {
+                  "name": "Technical Owner"
+                }
+              }
+            }
+          ]
+        },
+        "domain": {
+          "domain": {
+            "urn": "urn:li:domain:revenue-cycle",
+            "properties": {
+              "name": "Revenue Cycle"
+            }
+          }
+        },
+        "tags": {
+          "tags": [
+            {
+              "tag": {
+                "urn": "urn:li:tag:ColdLineageDemoEstate",
+                "name": "ColdLineageDemoEstate",
+                "properties": {
+                  "name": "ColdLineageDemoEstate"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:SOX",
+                "name": "SOX",
+                "properties": {
+                  "name": "SOX"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:Financial",
+                "name": "Financial",
+                "properties": {
+                  "name": "Financial"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:Tier2",
+                "name": "Tier2",
+                "properties": {
+                  "name": "Tier2"
+                }
+              }
+            }
+          ]
+        },
+        "glossaryTerms": {
+          "terms": [
+            {
+              "term": {
+                "urn": "urn:li:glossaryTerm:FinancialRecord",
+                "name": "FinancialRecord",
+                "properties": {
+                  "name": "FinancialRecord"
+                }
+              }
+            }
+          ]
+        },
+        "deprecation": null,
+        "subTypes": {
+          "typeNames": [
+            "Table"
+          ]
+        }
+      }
+    },
+    "extensions": {}
+  }
+}

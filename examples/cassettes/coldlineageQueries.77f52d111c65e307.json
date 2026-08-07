@@ -1,0 +1,368 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.444695+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageQueries",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)",
+    "count": 50
+  },
+  "response": {
+    "data": {
+      "listQueries": {
+        "total": 4,
+        "queries": [
+          {
+            "urn": "urn:li:query:coldlineage-care_events_live-care_events_hourly_rollup",
+            "properties": {
+              "name": "care_events_hourly_rollup -- care_events_live",
+              "description": "Hourly event counts by unit. Rebuilt every 30 minutes over a 30-day window.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT date_trunc('hour', v.event_ts) AS hour_start,\n       v.unit,\n       v.event_type,\n       count(*) AS events\nFROM public.care_events_live v\nWHERE v.event_date >= CURRENT_DATE - INTERVAL '30 days'\nGROUP BY 1, 2, 3",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1786018620000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1786018620000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "17520"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "DATASET"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.care_events_hourly_rollup,PROD)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-06T12:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "dbt"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "care_events_hourly_rollup"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "care_events_hourly_rollup"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "event_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)"
+                }
+              },
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.care_events_hourly_rollup,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-care_events_live-operations_command_dashboard",
+            "properties": {
+              "name": "Operations Command Centre -- care_events_live",
+              "description": "Live unit-by-unit event board. Refreshes every 60 seconds.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT v.unit,\n       v.event_type,\n       v.severity,\n       count(*)                                   AS events,\n       count(*) FILTER (WHERE NOT v.acknowledged) AS unacknowledged\nFROM public.care_events_live v\nWHERE v.event_date >= CURRENT_DATE - INTERVAL '7 days'\nGROUP BY 1, 2, 3",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1786015020000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1786015020000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "8412"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "DASHBOARD"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:dashboard:(superset,operations_command_dashboard)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-06T11:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "superset"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "Operations Command Centre"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "operations_command_dashboard"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "event_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-care_events_live-unit_census_chart",
+            "properties": {
+              "name": "Daily Unit Census -- care_events_live",
+              "description": "Distinct patients per unit per day for the current calendar year.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT v.unit,\n       v.event_date,\n       count(DISTINCT v.patient_id) AS census\nFROM public.care_events_live v\nWHERE v.event_date BETWEEN DATE '2026-01-01' AND CURRENT_DATE\nGROUP BY 1, 2",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1786004220000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1786004220000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "2140"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "CHART"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:chart:(superset,unit_census_chart)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-06T08:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "superset"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "Daily Unit Census"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "unit_census_chart"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "event_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-care_events_live-sepsis_risk_model_v4",
+            "properties": {
+              "name": "Sepsis Risk Model v4 -- care_events_live",
+              "description": "Production early-warning model. Retrained nightly on 12 months of events.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT v.patient_id,\n       v.event_date,\n       v.event_type,\n       v.severity,\n       v.unit,\n       v.source_system\nFROM public.care_events_live v\nWHERE v.event_date > (NOW() - INTERVAL '12 months')::date\n  AND v.severity >= 2",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1785979020000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1785979020000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "730"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.carrier_urn",
+                  "value": "urn:li:dataJob:(urn:li:dataFlow:(airflow,ml_training,PROD),sepsis_risk_training)"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "MLMODEL"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "2"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,sepsis_risk_model_v4,PROD)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-06T01:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "mlflow"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "Sepsis Risk Model v4"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "sepsis_risk_model_v4"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "event_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

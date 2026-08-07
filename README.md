@@ -152,14 +152,21 @@ like it works and is wrong.
 
 | Table | What it isolates |
 |---|---|
-| **`patient_encounters`** | **The hero.** Temperature **81.2 HOT** — genuinely in active use — yet 516,088 rows (46.9%) sit before 2023 and every consumer reads no earlier than 2024-01-01. *Archivable.* |
-| **`lab_results`** | **The killer.** 0 queries, 0 users in 30 days. Every dataset-level tool archives it. **Blocked** — one HIPAA extract does an unbounded scan. |
+| **`patient_encounters`** | **The hero.** Temperature **81.3 HOT** — genuinely in active use — yet 516,088 rows (46.9%) sit before 2023 and every consumer reads no earlier than 2024-01-01. **Archivable.** |
+| **`lab_results`** | **The killer.** Temperature **10.8 COLD** — 0 queries, 0 users in 30 days. Every dataset-level tool archives it tomorrow. **Blocked at every possible cutoff** — one HIPAA extract does an unbounded scan. |
 | `claims_history` | ACTIVE legal hold (`MDL-2291`) as a DataHub structured property. Range analysis approves; policy vetoes. |
 | `care_events_live` | Genuinely hot; the 2-year retention floor lands before the table starts. |
 | `billing_ledger` | Consumers clear a 2022 cutoff; the 7-year retention floor does not. Same table, different cutoff, different answer. |
 
-The first two rows are the argument. One is hot and archivable; the other looks cold and is not.
-Dataset-level temperature gets **both of them wrong**.
+Those two rows are the entire argument:
+
+```
+patient_encounters   81.3 HOT    -> archivable      (46.9% of it is provably unread)
+lab_results          10.8 COLD   -> blocked         (at every cutoff, forever)
+```
+
+**Dataset-level temperature gets both of them exactly backwards.** Only reading each consumer's
+actual SQL separates them.
 
 ## Verified run
 
@@ -167,7 +174,7 @@ Against DataHub OSS v1.7.0, reproducible with `make examples`:
 
 ```
 patient_encounters   1,100,000 rows / 178 MB / event_date 2019-01-01 .. 2026-08-05
-  temperature 81.2 HOT, archive_eligible: true
+  temperature 81.3 HOT, archive_eligible: true
 
 cutoff sweep
   2022-01-01  SAFE_TO_ARCHIVE           +730d

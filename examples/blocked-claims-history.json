@@ -1,0 +1,390 @@
+{
+  "_about": "A policy veto, read out of DataHub. claims_history carries an ACTIVE legal hold in the structured property io.coldlineage.policy.legalHold, with the matter recorded in io.coldlineage.policy.legalHoldMatter. That is an unconditional block: it is evaluated before any cutoff analysis, it cannot be out-voted by a temperature score, and the plan carries it so /api/execute refuses.\n\nBlockers are kept out of the temperature score on purpose. A legal hold does not make data hotter -- it makes the question moot. Folding it into a 0-100 number would let a sufficiently cold dataset out-vote a court order.\n\nNote the second, independent blocker in `blockers`: claims_actuarial_snapshot is in DataHub's lineage but has no query text recorded, so its lookback cannot be proven and it is treated as unbounded. Two different kinds of 'no' -- a policy veto and an evidence gap -- are reported separately rather than collapsed into one verdict, because they need different fixes.",
+  "recorded_at": "2026-08-07T02:54:04.811914+00:00",
+  "dataset": {
+    "id": 3,
+    "name": "claims_history",
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)"
+  },
+  "legal_hold": {
+    "active": true,
+    "matter": "MDL-2291 -- In re Regional Payer Billing Practices (D. Mass.)",
+    "read_from": {
+      "source": "datahub:structured_properties",
+      "detail": "4 io.coldlineage.policy.* value(s) read from the catalog",
+      "observed_at": "2026-08-07T02:54:03.119550Z"
+    }
+  },
+  "blockers": [
+    {
+      "code": "LEGAL_HOLD",
+      "message": "Active legal hold (MDL-2291 -- In re Regional Payer Billing Practices (D. Mass.)). Archival and deletion are blocked unconditionally.",
+      "provenance": {
+        "source": "datahub:structured_properties",
+        "detail": "4 io.coldlineage.policy.* value(s) read from the catalog",
+        "observed_at": "2026-08-07T02:54:03.119550Z"
+      }
+    },
+    {
+      "code": "UNBOUNDED_CONSUMER",
+      "message": "1 downstream consumer(s) read this table without a date predicate: claims_actuarial_snapshot. No cutoff can be proven safe while an unbounded scan exists.",
+      "provenance": {
+        "source": "datahub:lineage",
+        "detail": "lineage edge present, no query text recorded in DataHub",
+        "observed_at": "2026-08-07T02:54:03.119851Z"
+      }
+    }
+  ],
+  "archive_eligible": false,
+  "plan_attempt": {
+    "request": {
+      "cutoff_date": "2020-01-01"
+    },
+    "http_status": 200,
+    "executable": false,
+    "executable_reason": "blocked by: LEGAL_HOLD, UNBOUNDED_CONSUMER, RETENTION_FLOOR",
+    "blockers": [
+      {
+        "code": "LEGAL_HOLD",
+        "message": "Active legal hold (MDL-2291 -- In re Regional Payer Billing Practices (D. Mass.)). Archival and deletion are blocked unconditionally.",
+        "provenance": {
+          "source": "datahub:structured_properties",
+          "detail": "4 io.coldlineage.policy.* value(s) read from the catalog",
+          "observed_at": "2026-08-07T02:54:04.754982Z"
+        }
+      },
+      {
+        "code": "UNBOUNDED_CONSUMER",
+        "message": "1 downstream consumer(s) read this table without a date predicate: claims_actuarial_snapshot. No cutoff can be proven safe while an unbounded scan exists.",
+        "provenance": {
+          "source": "datahub:lineage",
+          "detail": "lineage edge present, no query text recorded in DataHub",
+          "observed_at": "2026-08-07T02:54:04.755307Z"
+        }
+      },
+      {
+        "code": "RETENTION_FLOOR",
+        "message": "Retention policy requires 7 years of history to stay hot (on or after 2019-08-07). The proposed cutoff of 2020-01-01 breaches it by 147 days. Move the cutoff to 2019-08-07 or earlier.",
+        "provenance": {
+          "source": "datahub:structured_properties",
+          "detail": "4 io.coldlineage.policy.* value(s) read from the catalog",
+          "observed_at": "2026-08-07T02:54:04.754982Z"
+        }
+      }
+    ]
+  },
+  "cutoffs": [
+    {
+      "cutoff_date": "2019-01-01",
+      "recommendation": "DO_NOT_ARCHIVE",
+      "verdict": {
+        "cutoff_date": "2019-01-01",
+        "recommendation": "DO_NOT_ARCHIVE",
+        "consumers": [
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),annual_audit_extract)",
+              "consumer_name": "annual_audit_extract",
+              "consumer_type": "DATA_JOB",
+              "platform": null,
+              "degree": 1,
+              "earliest_date_read": "2019-01-01",
+              "derivation": "sql_predicate",
+              "predicate": "c.service_date >= CAST('2019-01-01' AS DATE)",
+              "evidence_sql": "SELECT c.claim_number,\n       c.member_id,\n       c.service_date,\n       c.adjudication_date,\n       c.claim_status,\n       c.billed_amount,\n       c.allowed_amount,\n       c.paid_amount,\n       c.provider_npi,\n       c.procedure_code\nFROM public.claims_history c\nWHERE c.service_date >= DATE '2019-01-01'\nORDER BY c.service_date",
+              "query_last_seen": null,
+              "query_run_count": 7,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-claims_history-annual_audit_extract)",
+                "observed_at": "2026-08-07T02:54:04.569018Z"
+              }
+            },
+            "state": "tight",
+            "headroom_days": 0,
+            "reason": "reads back to 2019-01-01; clears the cutoff by only 0 days"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,actuarial.reserving.claims_actuarial_snapshot,PROD)",
+              "consumer_name": "claims_actuarial_snapshot",
+              "consumer_type": "DATASET",
+              "platform": "snowflake",
+              "degree": 1,
+              "earliest_date_read": null,
+              "derivation": "no_queries_observed",
+              "predicate": null,
+              "evidence_sql": null,
+              "query_last_seen": null,
+              "query_run_count": null,
+              "provenance": {
+                "source": "datahub:lineage",
+                "detail": "lineage edge present, no query text recorded in DataHub",
+                "observed_at": "2026-08-07T02:54:04.569028Z"
+              }
+            },
+            "state": "unknown",
+            "headroom_days": null,
+            "reason": "no SQL recorded in DataHub for this consumer, so its history window cannot be proven -- treated as unbounded"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:chart:(superset,claims_denial_rate_chart)",
+              "consumer_name": "Claims Denial Rate by Reason",
+              "consumer_type": "CHART",
+              "platform": "superset",
+              "degree": 1,
+              "earliest_date_read": "2023-01-01",
+              "derivation": "sql_predicate",
+              "predicate": "c.service_date BETWEEN CAST('2023-01-01' AS DATE) AND CURRENT_DATE",
+              "evidence_sql": "SELECT date_trunc('month', c.service_date)::date AS month_start,\n       c.denial_reason,\n       count(*) AS denied_claims\nFROM public.claims_history c\nWHERE c.claim_status = 'DENIED'\n  AND c.service_date BETWEEN DATE '2023-01-01' AND CURRENT_DATE\nGROUP BY 1, 2",
+              "query_last_seen": null,
+              "query_run_count": 88,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-claims_history-claims_denial_rate_chart)",
+                "observed_at": "2026-08-07T02:54:04.569217Z"
+              }
+            },
+            "state": "safe",
+            "headroom_days": 1461,
+            "reason": "reads back to 2023-01-01; clears the cutoff by 4 years"
+          }
+        ],
+        "binding_constraint": {
+          "window": {
+            "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,actuarial.reserving.claims_actuarial_snapshot,PROD)",
+            "consumer_name": "claims_actuarial_snapshot",
+            "consumer_type": "DATASET",
+            "platform": "snowflake",
+            "degree": 1,
+            "earliest_date_read": null,
+            "derivation": "no_queries_observed",
+            "predicate": null,
+            "evidence_sql": null,
+            "query_last_seen": null,
+            "query_run_count": null,
+            "provenance": {
+              "source": "datahub:lineage",
+              "detail": "lineage edge present, no query text recorded in DataHub",
+              "observed_at": "2026-08-07T02:54:04.569028Z"
+            }
+          },
+          "state": "unknown",
+          "headroom_days": null,
+          "reason": "no SQL recorded in DataHub for this consumer, so its history window cannot be proven -- treated as unbounded"
+        },
+        "headroom_days": null,
+        "rationale": "Blocked by claims_actuarial_snapshot (dataset): no SQL recorded in DataHub for this consumer, so its history window cannot be proven -- treated as unbounded. No cutoff can be proven safe while an unbounded consumer exists. Bound its query with a date predicate, or archive with rehydration on demand."
+      }
+    },
+    {
+      "cutoff_date": "2020-01-01",
+      "recommendation": "DO_NOT_ARCHIVE",
+      "verdict": {
+        "cutoff_date": "2020-01-01",
+        "recommendation": "DO_NOT_ARCHIVE",
+        "consumers": [
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),annual_audit_extract)",
+              "consumer_name": "annual_audit_extract",
+              "consumer_type": "DATA_JOB",
+              "platform": null,
+              "degree": 1,
+              "earliest_date_read": "2019-01-01",
+              "derivation": "sql_predicate",
+              "predicate": "c.service_date >= CAST('2019-01-01' AS DATE)",
+              "evidence_sql": "SELECT c.claim_number,\n       c.member_id,\n       c.service_date,\n       c.adjudication_date,\n       c.claim_status,\n       c.billed_amount,\n       c.allowed_amount,\n       c.paid_amount,\n       c.provider_npi,\n       c.procedure_code\nFROM public.claims_history c\nWHERE c.service_date >= DATE '2019-01-01'\nORDER BY c.service_date",
+              "query_last_seen": null,
+              "query_run_count": 7,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-claims_history-annual_audit_extract)",
+                "observed_at": "2026-08-07T02:54:04.629881Z"
+              }
+            },
+            "state": "blocked",
+            "headroom_days": -365,
+            "reason": "reads back to 2019-01-01; a cutoff of 2020-01-01 would archive 365 days of rows it still reads"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,actuarial.reserving.claims_actuarial_snapshot,PROD)",
+              "consumer_name": "claims_actuarial_snapshot",
+              "consumer_type": "DATASET",
+              "platform": "snowflake",
+              "degree": 1,
+              "earliest_date_read": null,
+              "derivation": "no_queries_observed",
+              "predicate": null,
+              "evidence_sql": null,
+              "query_last_seen": null,
+              "query_run_count": null,
+              "provenance": {
+                "source": "datahub:lineage",
+                "detail": "lineage edge present, no query text recorded in DataHub",
+                "observed_at": "2026-08-07T02:54:04.629890Z"
+              }
+            },
+            "state": "unknown",
+            "headroom_days": null,
+            "reason": "no SQL recorded in DataHub for this consumer, so its history window cannot be proven -- treated as unbounded"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:chart:(superset,claims_denial_rate_chart)",
+              "consumer_name": "Claims Denial Rate by Reason",
+              "consumer_type": "CHART",
+              "platform": "superset",
+              "degree": 1,
+              "earliest_date_read": "2023-01-01",
+              "derivation": "sql_predicate",
+              "predicate": "c.service_date BETWEEN CAST('2023-01-01' AS DATE) AND CURRENT_DATE",
+              "evidence_sql": "SELECT date_trunc('month', c.service_date)::date AS month_start,\n       c.denial_reason,\n       count(*) AS denied_claims\nFROM public.claims_history c\nWHERE c.claim_status = 'DENIED'\n  AND c.service_date BETWEEN DATE '2023-01-01' AND CURRENT_DATE\nGROUP BY 1, 2",
+              "query_last_seen": null,
+              "query_run_count": 88,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-claims_history-claims_denial_rate_chart)",
+                "observed_at": "2026-08-07T02:54:04.630070Z"
+              }
+            },
+            "state": "safe",
+            "headroom_days": 1096,
+            "reason": "reads back to 2023-01-01; clears the cutoff by 3 years"
+          }
+        ],
+        "binding_constraint": {
+          "window": {
+            "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),annual_audit_extract)",
+            "consumer_name": "annual_audit_extract",
+            "consumer_type": "DATA_JOB",
+            "platform": null,
+            "degree": 1,
+            "earliest_date_read": "2019-01-01",
+            "derivation": "sql_predicate",
+            "predicate": "c.service_date >= CAST('2019-01-01' AS DATE)",
+            "evidence_sql": "SELECT c.claim_number,\n       c.member_id,\n       c.service_date,\n       c.adjudication_date,\n       c.claim_status,\n       c.billed_amount,\n       c.allowed_amount,\n       c.paid_amount,\n       c.provider_npi,\n       c.procedure_code\nFROM public.claims_history c\nWHERE c.service_date >= DATE '2019-01-01'\nORDER BY c.service_date",
+            "query_last_seen": null,
+            "query_run_count": 7,
+            "provenance": {
+              "source": "datahub:queries",
+              "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-claims_history-annual_audit_extract)",
+              "observed_at": "2026-08-07T02:54:04.629881Z"
+            }
+          },
+          "state": "blocked",
+          "headroom_days": -365,
+          "reason": "reads back to 2019-01-01; a cutoff of 2020-01-01 would archive 365 days of rows it still reads"
+        },
+        "headroom_days": -365,
+        "rationale": "Blocked by annual_audit_extract (data_job): it reads back to 2019-01-01, which is 365 days inside the proposed cutoff of 2020-01-01. Move the cutoff to 2019-01-01 or earlier."
+      }
+    },
+    {
+      "cutoff_date": "2021-01-01",
+      "recommendation": "DO_NOT_ARCHIVE",
+      "verdict": {
+        "cutoff_date": "2021-01-01",
+        "recommendation": "DO_NOT_ARCHIVE",
+        "consumers": [
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),annual_audit_extract)",
+              "consumer_name": "annual_audit_extract",
+              "consumer_type": "DATA_JOB",
+              "platform": null,
+              "degree": 1,
+              "earliest_date_read": "2019-01-01",
+              "derivation": "sql_predicate",
+              "predicate": "c.service_date >= CAST('2019-01-01' AS DATE)",
+              "evidence_sql": "SELECT c.claim_number,\n       c.member_id,\n       c.service_date,\n       c.adjudication_date,\n       c.claim_status,\n       c.billed_amount,\n       c.allowed_amount,\n       c.paid_amount,\n       c.provider_npi,\n       c.procedure_code\nFROM public.claims_history c\nWHERE c.service_date >= DATE '2019-01-01'\nORDER BY c.service_date",
+              "query_last_seen": null,
+              "query_run_count": 7,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-claims_history-annual_audit_extract)",
+                "observed_at": "2026-08-07T02:54:04.691691Z"
+              }
+            },
+            "state": "blocked",
+            "headroom_days": -731,
+            "reason": "reads back to 2019-01-01; a cutoff of 2021-01-01 would archive 731 days of rows it still reads"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,actuarial.reserving.claims_actuarial_snapshot,PROD)",
+              "consumer_name": "claims_actuarial_snapshot",
+              "consumer_type": "DATASET",
+              "platform": "snowflake",
+              "degree": 1,
+              "earliest_date_read": null,
+              "derivation": "no_queries_observed",
+              "predicate": null,
+              "evidence_sql": null,
+              "query_last_seen": null,
+              "query_run_count": null,
+              "provenance": {
+                "source": "datahub:lineage",
+                "detail": "lineage edge present, no query text recorded in DataHub",
+                "observed_at": "2026-08-07T02:54:04.691701Z"
+              }
+            },
+            "state": "unknown",
+            "headroom_days": null,
+            "reason": "no SQL recorded in DataHub for this consumer, so its history window cannot be proven -- treated as unbounded"
+          },
+          {
+            "window": {
+              "consumer_urn": "urn:li:chart:(superset,claims_denial_rate_chart)",
+              "consumer_name": "Claims Denial Rate by Reason",
+              "consumer_type": "CHART",
+              "platform": "superset",
+              "degree": 1,
+              "earliest_date_read": "2023-01-01",
+              "derivation": "sql_predicate",
+              "predicate": "c.service_date BETWEEN CAST('2023-01-01' AS DATE) AND CURRENT_DATE",
+              "evidence_sql": "SELECT date_trunc('month', c.service_date)::date AS month_start,\n       c.denial_reason,\n       count(*) AS denied_claims\nFROM public.claims_history c\nWHERE c.claim_status = 'DENIED'\n  AND c.service_date BETWEEN DATE '2023-01-01' AND CURRENT_DATE\nGROUP BY 1, 2",
+              "query_last_seen": null,
+              "query_run_count": 88,
+              "provenance": {
+                "source": "datahub:queries",
+                "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-claims_history-claims_denial_rate_chart)",
+                "observed_at": "2026-08-07T02:54:04.691874Z"
+              }
+            },
+            "state": "safe",
+            "headroom_days": 730,
+            "reason": "reads back to 2023-01-01; clears the cutoff by 2 years"
+          }
+        ],
+        "binding_constraint": {
+          "window": {
+            "consumer_urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),annual_audit_extract)",
+            "consumer_name": "annual_audit_extract",
+            "consumer_type": "DATA_JOB",
+            "platform": null,
+            "degree": 1,
+            "earliest_date_read": "2019-01-01",
+            "derivation": "sql_predicate",
+            "predicate": "c.service_date >= CAST('2019-01-01' AS DATE)",
+            "evidence_sql": "SELECT c.claim_number,\n       c.member_id,\n       c.service_date,\n       c.adjudication_date,\n       c.claim_status,\n       c.billed_amount,\n       c.allowed_amount,\n       c.paid_amount,\n       c.provider_npi,\n       c.procedure_code\nFROM public.claims_history c\nWHERE c.service_date >= DATE '2019-01-01'\nORDER BY c.service_date",
+            "query_last_seen": null,
+            "query_run_count": 7,
+            "provenance": {
+              "source": "datahub:queries",
+              "detail": "parsed from SQL recorded in DataHub (urn:li:query:coldlineage-claims_history-annual_audit_extract)",
+              "observed_at": "2026-08-07T02:54:04.691691Z"
+            }
+          },
+          "state": "blocked",
+          "headroom_days": -731,
+          "reason": "reads back to 2019-01-01; a cutoff of 2021-01-01 would archive 731 days of rows it still reads"
+        },
+        "headroom_days": -731,
+        "rationale": "Blocked by annual_audit_extract (data_job): it reads back to 2019-01-01, which is 731 days inside the proposed cutoff of 2021-01-01. Move the cutoff to 2019-01-01 or earlier."
+      }
+    }
+  ]
+}

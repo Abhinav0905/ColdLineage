@@ -159,6 +159,11 @@ class DatasetContext(BaseModel):
     last_query_at: datetime | None = None
     query_count_30d: int | None = None
     distinct_users_30d: int | None = None
+    # True when DataHub actually has a usage aspect for this dataset. Distinguishes
+    # "measured, and nobody read it" (genuinely cold) from "not measured" (unknown, and
+    # therefore scored hot). Without this, an idle table is indistinguishable from an
+    # unmonitored one.
+    usage_observed: bool = False
     usage_provenance: Provenance
 
     downstream: list[ConsumerWindow] = Field(default_factory=list)

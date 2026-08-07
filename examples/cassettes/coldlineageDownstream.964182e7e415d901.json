@@ -1,0 +1,30 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.589466+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDownstream",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+    "count": 1
+  },
+  "response": {
+    "data": {
+      "searchAcrossLineage": {
+        "total": 2,
+        "searchResults": [
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)",
+              "type": "DATA_JOB",
+              "jobId": "hipaa_lab_disclosure_extract",
+              "dataJobProperties": {
+                "name": "hipaa_lab_disclosure_extract"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

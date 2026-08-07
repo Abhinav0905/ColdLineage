@@ -1,0 +1,14 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.200470+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageHealth",
+  "variables": {},
+  "response": {
+    "data": {
+      "appConfig": {
+        "appVersion": "v1.7.0"
+      }
+    },
+    "extensions": {}
+  }
+}

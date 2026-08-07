@@ -1,0 +1,194 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.606849+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageQueries",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+    "count": 50
+  },
+  "response": {
+    "data": {
+      "listQueries": {
+        "total": 2,
+        "queries": [
+          {
+            "urn": "urn:li:query:coldlineage-lab_results-hipaa_lab_disclosure_extract",
+            "properties": {
+              "name": "hipaa_lab_disclosure_extract -- lab_results",
+              "description": "Quarterly HIPAA accounting-of-disclosures extract. Regulators can request the full disclosure history for any patient, so this job reads every row that has ever been written -- there is no date predicate and there cannot be one.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT r.result_id,\n       r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.resulted_at,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.result_units,\n       r.abnormal_flag,\n       r.performing_lab\nFROM public.lab_results r\nWHERE r.performing_lab IS NOT NULL\nORDER BY r.collected_date",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1782796620000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1782796620000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "27"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "DATA_JOB"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),hipaa_lab_disclosure_extract)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-06-30T05:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "airflow"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "hipaa_lab_disclosure_extract"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "hipaa_lab_disclosure_extract"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "collected_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-lab_results-lab_abnormal_flags",
+            "properties": {
+              "name": "lab_abnormal_flags -- lab_results",
+              "description": "Abnormal-result surfacing model. Ran nightly on a 90-day window until it was retired in favour of in-EHR alerting.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT r.patient_id,\n       r.specimen_id,\n       r.collected_date,\n       r.loinc_code,\n       r.analyte,\n       r.result_value,\n       r.reference_low,\n       r.reference_high,\n       r.abnormal_flag\nFROM public.lab_results r\nWHERE r.collected_date >= CURRENT_DATE - INTERVAL '90 days'\n  AND r.abnormal_flag <> 'N'",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1777691820000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1777691820000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "214"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "DATASET"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.lab_abnormal_flags,PROD)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-05-02T03:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "dbt"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "lab_abnormal_flags"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "lab_abnormal_flags"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "collected_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)"
+                }
+              },
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.lab_abnormal_flags,PROD)"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

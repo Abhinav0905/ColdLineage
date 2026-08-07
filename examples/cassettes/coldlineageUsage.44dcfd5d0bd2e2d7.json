@@ -1,0 +1,287 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.638394+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageUsage",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+  },
+  "response": {
+    "data": {
+      "dataset": {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+        "usageStats": {
+          "buckets": [
+            {
+              "bucket": 1783468800000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1783555200000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1783641600000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1783728000000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1783814400000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1783900800000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1783987200000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784073600000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784160000000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784246400000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784332800000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784419200000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784505600000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784592000000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784678400000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784764800000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784851200000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1784937600000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785024000000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785110400000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785196800000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785283200000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 2,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785369600000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 3,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785456000000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 3,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785542400000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 3,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785628800000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 3,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785715200000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 3,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785801600000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 3,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785888000000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 3,
+                "uniqueUserCount": 3
+              }
+            },
+            {
+              "bucket": 1785974400000,
+              "duration": "DAY",
+              "metrics": {
+                "totalSqlQueries": 3,
+                "uniqueUserCount": 3
+              }
+            }
+          ],
+          "aggregations": {
+            "uniqueUserCount": 3,
+            "totalSqlQueries": 68,
+            "users": [
+              {
+                "user": {
+                  "urn": "urn:li:corpuser:analytics-svc",
+                  "username": "analytics-svc"
+                },
+                "count": 30
+              },
+              {
+                "user": {
+                  "urn": "urn:li:corpuser:maya.chen",
+                  "username": "maya.chen"
+                },
+                "count": 8
+              },
+              {
+                "user": {
+                  "urn": "urn:li:corpuser:priya.shah",
+                  "username": "priya.shah"
+                },
+                "count": 30
+              }
+            ]
+          }
+        }
+      }
+    },
+    "extensions": {}
+  }
+}

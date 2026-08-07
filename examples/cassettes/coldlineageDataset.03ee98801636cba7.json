@@ -1,0 +1,294 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.457869+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDataset",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)"
+  },
+  "response": {
+    "data": {
+      "dataset": {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)",
+        "name": "claims_history",
+        "platform": {
+          "name": "postgres",
+          "properties": {
+            "displayName": "PostgreSQL"
+          }
+        },
+        "properties": {
+          "name": "claims_history",
+          "qualifiedName": "coldlineage.public.claims_history",
+          "description": "Adjudicated payer claims from the legacy billing platform. Writes stopped at the end of 2024 when claims moved to the new clearinghouse. Retained under an active litigation hold.\n\nDemo role: POLICY VETO -- cold by every telemetry signal, and range analysis would approve a cutoff, but an ACTIVE legal hold declared in DataHub blocks it unconditionally.",
+          "customProperties": [
+            {
+              "key": "coldlineage.anchor_date",
+              "value": "2026-08-06"
+            },
+            {
+              "key": "coldlineage.synthetic",
+              "value": "true"
+            },
+            {
+              "key": "coldlineage.min_date",
+              "value": "2018-01-01"
+            },
+            {
+              "key": "coldlineage.qualified_table",
+              "value": "public.claims_history"
+            },
+            {
+              "key": "coldlineage.measured_at",
+              "value": "2026-08-07T02:24:49.330003+00:00"
+            },
+            {
+              "key": "coldlineage.source",
+              "value": "coldlineage-demo-estate"
+            },
+            {
+              "key": "coldlineage.measured_row_count",
+              "value": "620000"
+            },
+            {
+              "key": "coldlineage.measured_total_bytes",
+              "value": "106717184"
+            },
+            {
+              "key": "coldlineage.max_date",
+              "value": "2024-12-30"
+            },
+            {
+              "key": "coldlineage.measured_index_bytes",
+              "value": "18432000"
+            },
+            {
+              "key": "coldlineage.date_column",
+              "value": "service_date"
+            },
+            {
+              "key": "coldlineage.measured_heap_bytes",
+              "value": "88276992"
+            },
+            {
+              "key": "coldlineage.measurement_method",
+              "value": "pg_total_relation_size / pg_relation_size / pg_indexes_size"
+            },
+            {
+              "key": "coldlineage.demo_role",
+              "value": "POLICY VETO -- cold by every telemetry signal, and range analysis would approve a cutoff, but an ACTIVE legal hold declared in DataHub blocks it unconditionally."
+            }
+          ]
+        },
+        "editableProperties": null,
+        "schemaMetadata": {
+          "name": "coldlineage.public.claims_history",
+          "fields": [
+            {
+              "fieldPath": "claim_id",
+              "nativeDataType": "bigint",
+              "type": "NUMBER",
+              "description": "Surrogate primary key."
+            },
+            {
+              "fieldPath": "claim_number",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Payer-assigned claim control number."
+            },
+            {
+              "fieldPath": "member_id",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Pseudonymous member identifier."
+            },
+            {
+              "fieldPath": "service_date",
+              "nativeDataType": "date",
+              "type": "DATE",
+              "description": "Date of service. Range key."
+            },
+            {
+              "fieldPath": "adjudication_date",
+              "nativeDataType": "date",
+              "type": "DATE",
+              "description": "Date the payer adjudicated the claim."
+            },
+            {
+              "fieldPath": "claim_status",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Terminal adjudication status."
+            },
+            {
+              "fieldPath": "billed_amount",
+              "nativeDataType": "numeric(12,2)",
+              "type": "NUMBER",
+              "description": "Amount billed to the payer."
+            },
+            {
+              "fieldPath": "allowed_amount",
+              "nativeDataType": "numeric(12,2)",
+              "type": "NUMBER",
+              "description": "Payer-allowed amount."
+            },
+            {
+              "fieldPath": "paid_amount",
+              "nativeDataType": "numeric(12,2)",
+              "type": "NUMBER",
+              "description": "Amount actually paid."
+            },
+            {
+              "fieldPath": "provider_npi",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Rendering provider NPI."
+            },
+            {
+              "fieldPath": "procedure_code",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "CPT/HCPCS procedure code."
+            },
+            {
+              "fieldPath": "denial_reason",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "CARC denial reason, blank when paid."
+            }
+          ]
+        },
+        "ownership": {
+          "owners": [
+            {
+              "owner": {
+                "urn": "urn:li:corpuser:evan.brooks",
+                "username": "evan.brooks",
+                "properties": {
+                  "displayName": "Evan Brooks",
+                  "email": "evan.brooks@example-health.org"
+                }
+              },
+              "ownershipType": {
+                "urn": "urn:li:ownershipType:__system__business_owner",
+                "info": {
+                  "name": "Business Owner"
+                }
+              }
+            },
+            {
+              "owner": {
+                "urn": "urn:li:corpuser:data-platform",
+                "username": "data-platform",
+                "properties": {
+                  "displayName": "Data Platform Team",
+                  "email": "data-platform@example-health.org"
+                }
+              },
+              "ownershipType": {
+                "urn": "urn:li:ownershipType:__system__technical_owner",
+                "info": {
+                  "name": "Technical Owner"
+                }
+              }
+            }
+          ]
+        },
+        "domain": {
+          "domain": {
+            "urn": "urn:li:domain:finance-claims",
+            "properties": {
+              "name": "Finance & Claims"
+            }
+          }
+        },
+        "tags": {
+          "tags": [
+            {
+              "tag": {
+                "urn": "urn:li:tag:ColdLineageDemoEstate",
+                "name": "ColdLineageDemoEstate",
+                "properties": {
+                  "name": "ColdLineageDemoEstate"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:PHI",
+                "name": "PHI",
+                "properties": {
+                  "name": "PHI"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:PII",
+                "name": "PII",
+                "properties": {
+                  "name": "PII"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:HIPAA",
+                "name": "HIPAA",
+                "properties": {
+                  "name": "HIPAA"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:LegalHold",
+                "name": "LegalHold",
+                "properties": {
+                  "name": "LegalHold"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:Tier1",
+                "name": "Tier1",
+                "properties": {
+                  "name": "Tier1"
+                }
+              }
+            }
+          ]
+        },
+        "glossaryTerms": {
+          "terms": [
+            {
+              "term": {
+                "urn": "urn:li:glossaryTerm:ProtectedHealthInformation",
+                "name": "ProtectedHealthInformation",
+                "properties": {
+                  "name": "ProtectedHealthInformation"
+                }
+              }
+            },
+            {
+              "term": {
+                "urn": "urn:li:glossaryTerm:FinancialRecord",
+                "name": "FinancialRecord",
+                "properties": {
+                  "name": "FinancialRecord"
+                }
+              }
+            }
+          ]
+        },
+        "deprecation": null,
+        "subTypes": {
+          "typeNames": [
+            "Table"
+          ]
+        }
+      }
+    },
+    "extensions": {}
+  }
+}

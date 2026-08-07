@@ -1,0 +1,58 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.497986+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDownstream",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)",
+    "count": 50
+  },
+  "response": {
+    "data": {
+      "searchAcrossLineage": {
+        "total": 3,
+        "searchResults": [
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),annual_audit_extract)",
+              "type": "DATA_JOB",
+              "jobId": "annual_audit_extract",
+              "dataJobProperties": {
+                "name": "annual_audit_extract"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,actuarial.reserving.claims_actuarial_snapshot,PROD)",
+              "type": "DATASET",
+              "name": "claims_actuarial_snapshot",
+              "platform": {
+                "name": "snowflake"
+              },
+              "datasetProperties": {
+                "name": "claims_actuarial_snapshot",
+                "qualifiedName": "actuarial.reserving.claims_actuarial_snapshot"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:chart:(superset,claims_denial_rate_chart)",
+              "type": "CHART",
+              "chartPlatform": {
+                "name": "superset"
+              },
+              "chartProperties": {
+                "name": "Claims Denial Rate by Reason"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

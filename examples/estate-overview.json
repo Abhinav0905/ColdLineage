@@ -1,0 +1,252 @@
+[
+  {
+    "id": 4,
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.lab_results,PROD)",
+    "name": "lab_results",
+    "platform": "postgres",
+    "domain": "Clinical Diagnostics",
+    "owners": [
+      "Dana Okafor",
+      "Data Platform Team"
+    ],
+    "tags": [
+      "ColdLineageDemoEstate",
+      "PHI",
+      "PII",
+      "HIPAA",
+      "RegulatoryReporting",
+      "Tier3"
+    ],
+    "sensitive": true,
+    "row_count": 700000,
+    "size_bytes": 116899840,
+    "date_column": "collected_date",
+    "min_date": "2019-03-01",
+    "max_date": "2026-07-31",
+    "temperature": {
+      "recency_component": 0.0,
+      "frequency_component": 0.0,
+      "downstream_component": 7.2,
+      "criticality_component": 3.6,
+      "score": 10.8,
+      "classification": "COLD",
+      "inputs": {
+        "access_recency": "no queries in the observed 30-day window -> 0.00 [datahub:usage]",
+        "query_frequency": "0 queries/30d -> 0.00 [datahub:usage]",
+        "downstream_dependencies": "2 active consumer(s), 1 unbounded -> 0.40 [datahub:lineage]",
+        "business_criticality": "declared 0.30 [datahub:structured_properties]"
+      }
+    },
+    "archive_eligible": false,
+    "blockers": [
+      {
+        "code": "UNBOUNDED_CONSUMER",
+        "message": "1 downstream consumer(s) read this table without a date predicate: hipaa_lab_disclosure_extract. No cutoff can be proven safe while an unbounded scan exists.",
+        "provenance": {
+          "source": "datahub:queries",
+          "detail": "no lower bound on the date column -- unbounded scan",
+          "observed_at": "2026-08-07T02:54:02.693203Z"
+        }
+      }
+    ],
+    "downstream_count": 2,
+    "archive_state": "HOT",
+    "archived_through": null,
+    "signals_live": true
+  },
+  {
+    "id": 3,
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)",
+    "name": "claims_history",
+    "platform": "postgres",
+    "domain": "Finance & Claims",
+    "owners": [
+      "Evan Brooks",
+      "Data Platform Team"
+    ],
+    "tags": [
+      "ColdLineageDemoEstate",
+      "PHI",
+      "PII",
+      "HIPAA",
+      "LegalHold",
+      "Tier1"
+    ],
+    "sensitive": true,
+    "row_count": 620000,
+    "size_bytes": 106717184,
+    "date_column": "service_date",
+    "min_date": "2018-01-01",
+    "max_date": "2024-12-30",
+    "temperature": {
+      "recency_component": 0.0,
+      "frequency_component": 0.0,
+      "downstream_component": 10.8,
+      "criticality_component": 9.6,
+      "score": 20.4,
+      "classification": "COOL",
+      "inputs": {
+        "access_recency": "no queries in the observed 30-day window -> 0.00 [datahub:usage]",
+        "query_frequency": "0 queries/30d -> 0.00 [datahub:usage]",
+        "downstream_dependencies": "3 active consumer(s), 1 unbounded -> 0.60 [datahub:lineage]",
+        "business_criticality": "declared 0.80 [datahub:structured_properties]"
+      }
+    },
+    "archive_eligible": false,
+    "blockers": [
+      {
+        "code": "LEGAL_HOLD",
+        "message": "Active legal hold (MDL-2291 -- In re Regional Payer Billing Practices (D. Mass.)). Archival and deletion are blocked unconditionally.",
+        "provenance": {
+          "source": "datahub:structured_properties",
+          "detail": "4 io.coldlineage.policy.* value(s) read from the catalog",
+          "observed_at": "2026-08-07T02:54:02.593649Z"
+        }
+      },
+      {
+        "code": "UNBOUNDED_CONSUMER",
+        "message": "1 downstream consumer(s) read this table without a date predicate: claims_actuarial_snapshot. No cutoff can be proven safe while an unbounded scan exists.",
+        "provenance": {
+          "source": "datahub:lineage",
+          "detail": "lineage edge present, no query text recorded in DataHub",
+          "observed_at": "2026-08-07T02:54:02.594012Z"
+        }
+      }
+    ],
+    "downstream_count": 3,
+    "archive_state": "HOT",
+    "archived_through": null,
+    "signals_live": true
+  },
+  {
+    "id": 5,
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "name": "patient_encounters",
+    "platform": "postgres",
+    "domain": "Clinical Analytics",
+    "owners": [
+      "Maya Chen",
+      "Data Platform Team"
+    ],
+    "tags": [
+      "ColdLineageDemoEstate",
+      "PHI",
+      "PII",
+      "HIPAA",
+      "Tier2"
+    ],
+    "sensitive": true,
+    "row_count": 1100000,
+    "size_bytes": 178044928,
+    "date_column": "event_date",
+    "min_date": "2019-01-01",
+    "max_date": "2026-08-05",
+    "temperature": {
+      "recency_component": 41.9,
+      "frequency_component": 17.2,
+      "downstream_component": 18.0,
+      "criticality_component": 4.2,
+      "score": 81.3,
+      "classification": "HOT",
+      "inputs": {
+        "access_recency": "last query 1d ago -> 1.00 [datahub:usage]",
+        "query_frequency": "68 queries/30d -> 0.61 [datahub:usage]",
+        "downstream_dependencies": "7 active consumer(s) -> 1.00 [datahub:lineage]",
+        "business_criticality": "declared 0.35 [datahub:structured_properties]"
+      }
+    },
+    "archive_eligible": true,
+    "blockers": [],
+    "downstream_count": 7,
+    "archive_state": "HOT",
+    "archived_through": null,
+    "signals_live": true
+  },
+  {
+    "id": 1,
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)",
+    "name": "billing_ledger",
+    "platform": "postgres",
+    "domain": "Revenue Cycle",
+    "owners": [
+      "Sam Ruiz",
+      "Data Platform Team"
+    ],
+    "tags": [
+      "ColdLineageDemoEstate",
+      "SOX",
+      "Financial",
+      "Tier2"
+    ],
+    "sensitive": false,
+    "row_count": 450000,
+    "size_bytes": 73859072,
+    "date_column": "posted_date",
+    "min_date": "2016-01-01",
+    "max_date": "2026-08-05",
+    "temperature": {
+      "recency_component": 41.9,
+      "frequency_component": 23.3,
+      "downstream_component": 10.8,
+      "criticality_component": 6.6,
+      "score": 82.6,
+      "classification": "HOT",
+      "inputs": {
+        "access_recency": "last query 1d ago -> 1.00 [datahub:usage]",
+        "query_frequency": "310 queries/30d -> 0.83 [datahub:usage]",
+        "downstream_dependencies": "3 active consumer(s) -> 0.60 [datahub:lineage]",
+        "business_criticality": "declared 0.55 [datahub:structured_properties]"
+      }
+    },
+    "archive_eligible": true,
+    "blockers": [],
+    "downstream_count": 3,
+    "archive_state": "HOT",
+    "archived_through": null,
+    "signals_live": true
+  },
+  {
+    "id": 2,
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)",
+    "name": "care_events_live",
+    "platform": "postgres",
+    "domain": "Clinical Operations",
+    "owners": [
+      "Priya Shah",
+      "Data Platform Team"
+    ],
+    "tags": [
+      "ColdLineageDemoEstate",
+      "PHI",
+      "PII",
+      "HIPAA",
+      "Tier1"
+    ],
+    "sensitive": true,
+    "row_count": 780000,
+    "size_bytes": 118251520,
+    "date_column": "event_date",
+    "min_date": "2025-02-07",
+    "max_date": "2026-08-05",
+    "temperature": {
+      "recency_component": 41.9,
+      "frequency_component": 28.0,
+      "downstream_component": 18.0,
+      "criticality_component": 11.4,
+      "score": 99.3,
+      "classification": "HOT",
+      "inputs": {
+        "access_recency": "last query 1d ago -> 1.00 [datahub:usage]",
+        "query_frequency": "41820 queries/30d -> 1.00 [datahub:usage]",
+        "downstream_dependencies": "5 active consumer(s) -> 1.00 [datahub:lineage]",
+        "business_criticality": "declared 0.95 [datahub:structured_properties]"
+      }
+    },
+    "archive_eligible": true,
+    "blockers": [],
+    "downstream_count": 5,
+    "archive_state": "HOT",
+    "archived_through": null,
+    "signals_live": true
+  }
+]

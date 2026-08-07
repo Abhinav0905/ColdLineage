@@ -54,10 +54,19 @@ class TemperatureService:
         inputs: dict[str, str] = {}
 
         # -- recency
-        if context.last_query_at is None:
+        if context.last_query_at is None and context.usage_observed:
+            # DataHub measured this dataset and recorded no activity. That is evidence of
+            # coldness, not a gap -- and it is exactly the signal that makes an idle table
+            # a candidate. Scoring it as UNKNOWN here would bury the finding.
+            recency = 0.0
+            inputs["access_recency"] = (
+                "no queries in the observed 30-day window -> 0.00 "
+                f"[{context.usage_provenance.source.value}]"
+            )
+        elif context.last_query_at is None:
             recency = 1.0
             inputs["access_recency"] = (
-                f"UNKNOWN -> scored as hot (1.00). {context.usage_provenance.detail or 'no usage data'}"
+                f"UNKNOWN -> scored as hot (1.00). {context.usage_provenance.detail or 'no usage aspect in DataHub'}"
             )
         else:
             last = context.last_query_at
@@ -70,10 +79,15 @@ class TemperatureService:
             )
 
         # -- frequency
-        if context.query_count_30d is None:
+        if context.query_count_30d is None and context.usage_observed:
+            frequency = 0.0
+            inputs["query_frequency"] = (
+                f"0 queries/30d (measured) -> 0.00 [{context.usage_provenance.source.value}]"
+            )
+        elif context.query_count_30d is None:
             frequency = 1.0
             inputs["query_frequency"] = (
-                f"UNKNOWN -> scored as hot (1.00). {context.usage_provenance.detail or 'no usage data'}"
+                f"UNKNOWN -> scored as hot (1.00). {context.usage_provenance.detail or 'no usage aspect in DataHub'}"
             )
         else:
             count = max(context.query_count_30d, 0)

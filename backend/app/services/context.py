@@ -73,6 +73,19 @@ class ContextService:
         self.client = client
         self.extractor = HistoryWindowExtractor(dialect="postgres")
 
+    def _src(self, source: Source, detail: str = "") -> Provenance:
+        """Attribute a signal to where it *actually* came from on this request.
+
+        In replay mode the bytes came off disk, not off a GMS, so the signal is tagged
+        `cassette:recorded` and the detail names the aspect it was originally recorded
+        from. Reporting `datahub:lineage` while serving a cassette would be precisely the
+        kind of unearned claim this project refuses to make everywhere else.
+        """
+        if self.client.mode == "replay":
+            origin = f"replayed from a recorded {source.value} response"
+            return _from(Source.CASSETTE, f"{origin}{'; ' + detail if detail else ''}")
+        return _from(source, detail)
+
     # -- DataHub side ------------------------------------------------------
 
     async def _gather(self, urn: str) -> dict:
@@ -95,8 +108,7 @@ class ContextService:
                 out[key] = value
         return out
 
-    @staticmethod
-    def _resolve_date_column(entity: dict | None) -> tuple[str | None, Provenance]:
+    def _resolve_date_column(self, entity: dict | None) -> tuple[str | None, Provenance]:
         """Which column carries the history we would be slicing.
 
         The estate deliberately uses a different name per table (event_date,
@@ -110,20 +122,20 @@ class ContextService:
         declared = {p["key"]: p["value"] for p in props if p.get("key")}
         for key in ("coldlineage.dateColumn", "coldlineage.date_column"):
             if declared.get(key):
-                return declared[key], _from(Source.DATAHUB_PROPERTIES, f"declared as {key}")
+                return declared[key], self._src(Source.DATAHUB_PROPERTIES, f"declared as {key}")
 
         schema = entity.get("schemaMetadata") or {}
         fields = schema.get("fields") or []
         date_fields = [f for f in fields if str(f.get("nativeDataType", "")).lower().startswith("date")]
         if date_fields:
             name = date_fields[0]["fieldPath"]
-            return name, _from(Source.DATAHUB_SCHEMA, f"first DATE column in schemaMetadata ({name})")
+            return name, self._src(Source.DATAHUB_SCHEMA, f"first DATE column in schemaMetadata ({name})")
         ts_fields = [
             f for f in fields if "timestamp" in str(f.get("nativeDataType", "")).lower()
         ]
         if ts_fields:
             name = ts_fields[0]["fieldPath"]
-            return name, _from(Source.DATAHUB_SCHEMA, f"first TIMESTAMP column in schemaMetadata ({name})")
+            return name, self._src(Source.DATAHUB_SCHEMA, f"first TIMESTAMP column in schemaMetadata ({name})")
         return None, _unavailable("no DATE or TIMESTAMP column found in DataHub schemaMetadata")
 
     def _windows(
@@ -175,7 +187,7 @@ class ContextService:
                         degree=int(node.get("degree") or 1),
                         earliest_date_read=None,
                         derivation=derivation,
-                        provenance=_from(
+                        provenance=self._src(
                             Source.DATAHUB_LINEAGE,
                             "lineage edge present, no query text recorded in DataHub",
                         ),
@@ -222,7 +234,7 @@ class ContextService:
                         predicate=best_bound.predicate_text if best_bound else None,
                         evidence_sql=chosen.get("sql"),
                         query_run_count=chosen.get("run_count"),
-                        provenance=_from(
+                        provenance=self._src(
                             Source.DATAHUB_QUERIES,
                             unbounded_reason or "no resolvable lower bound on the date column",
                         ),
@@ -242,7 +254,7 @@ class ContextService:
                     predicate=best_bound.predicate_text if best_bound else None,
                     evidence_sql=chosen.get("sql"),
                     query_run_count=chosen.get("run_count"),
-                    provenance=_from(
+                    provenance=self._src(
                         Source.DATAHUB_QUERIES,
                         f"parsed from SQL recorded in DataHub ({chosen.get('urn','')})",
                     ),
@@ -251,8 +263,7 @@ class ContextService:
 
         return self._resolve_mediated(windows)
 
-    @staticmethod
-    def _resolve_mediated(windows: list[ConsumerWindow]) -> list[ConsumerWindow]:
+    def _resolve_mediated(self, windows: list[ConsumerWindow]) -> list[ConsumerWindow]:
         """Give multi-hop consumers the bound of whatever they read through.
 
         A dashboard two hops from the subject does not read the subject directly -- it
@@ -283,7 +294,7 @@ class ContextService:
                         update={
                             "earliest_date_read": inherited,
                             "derivation": WindowDerivation.NOT_A_QUERY_CONSUMER,
-                            "provenance": _from(
+                            "provenance": self._src(
                                 Source.DATAHUB_LINEAGE,
                                 f"reads the subject at {w.degree} hops via an intermediate; "
                                 f"inherits the earliest bound of its upstreams "
@@ -374,7 +385,7 @@ class ContextService:
         tags = [t for t in tags if t]
         terms = [t for t in terms if t]
         entity_prov = (
-            _from(Source.DATAHUB_SCHEMA, "dataset entity read from GMS")
+            self._src(Source.DATAHUB_SCHEMA, "dataset entity read from GMS")
             if entity
             else _unavailable(raw.get("entity_error") or "dataset not found in DataHub")
         )
@@ -390,9 +401,13 @@ class ContextService:
             legal_matter = None
             criticality = None
         else:
-            policy_prov = _from(
+            # Count only the policy namespace. `props` also carries the archive.* values
+            # this service writes, so len(props) would report "9 policy values" on an
+            # already-archived dataset when only 3 of them are policy.
+            policy_count = sum(1 for k in props if k.startswith(f"{POLICY_NS}."))
+            policy_prov = self._src(
                 Source.DATAHUB_PROPERTIES,
-                f"{len(props)} io.coldlineage.policy.* values read from the catalog",
+                f"{policy_count} {POLICY_NS}.* value(s) read from the catalog",
             )
             retention = _as_float(props.get(f"{POLICY_NS}.retentionYears"))
             hold = str(props.get(f"{POLICY_NS}.legalHold") or "NONE").upper()
@@ -402,13 +417,20 @@ class ContextService:
 
         # -- usage
         usage = raw.get("usage")
+        usage_observed = False
         if usage is None:
             usage_prov = _unavailable(raw.get("usage_error") or "usage aspect not readable")
             last_query_at = None
             query_count = None
             users = None
         else:
-            usage_prov = _from(Source.DATAHUB_USAGE, "datasetUsageStatistics, 30-day window")
+            usage_observed = bool(usage.get("observed"))
+            usage_prov = self._src(
+                Source.DATAHUB_USAGE,
+                "datasetUsageStatistics, 30-day window"
+                if usage_observed
+                else "no datasetUsageStatistics aspect present for this dataset",
+            )
             query_count = usage.get("total_queries")
             users = usage.get("unique_users")
             last_query_at = _epoch_ms(usage.get("last_active_bucket"))
@@ -441,6 +463,7 @@ class ContextService:
             last_query_at=last_query_at,
             query_count_30d=query_count,
             distinct_users_30d=users,
+            usage_observed=usage_observed,
             usage_provenance=usage_prov,
             downstream=windows,
             row_count=physical["row_count"],

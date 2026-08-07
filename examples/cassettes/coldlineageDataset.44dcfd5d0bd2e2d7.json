@@ -1,0 +1,290 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.617962+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDataset",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+  },
+  "response": {
+    "data": {
+      "dataset": {
+        "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+        "name": "patient_encounters",
+        "platform": {
+          "name": "postgres",
+          "properties": {
+            "displayName": "PostgreSQL"
+          }
+        },
+        "properties": {
+          "name": "patient_encounters",
+          "qualifiedName": "coldlineage.public.patient_encounters",
+          "description": "Completed clinical encounters across all facilities, one row per encounter. Written continuously since 2019. Recent history drives operational reporting; the pre-2023 tail is retained only because nothing ever removed it.\n\nDemo role: HERO CASE -- warm table, dead history. Table-level usage says 'in use'; range-level analysis says the first four years are archivable.",
+          "customProperties": [
+            {
+              "key": "coldlineage.anchor_date",
+              "value": "2026-08-06"
+            },
+            {
+              "key": "coldlineage.synthetic",
+              "value": "true"
+            },
+            {
+              "key": "coldlineage.min_date",
+              "value": "2019-01-01"
+            },
+            {
+              "key": "coldlineage.qualified_table",
+              "value": "public.patient_encounters"
+            },
+            {
+              "key": "coldlineage.measured_at",
+              "value": "2026-08-07T02:24:49.308660+00:00"
+            },
+            {
+              "key": "coldlineage.source",
+              "value": "coldlineage-demo-estate"
+            },
+            {
+              "key": "coldlineage.measured_row_count",
+              "value": "1100000"
+            },
+            {
+              "key": "coldlineage.measured_total_bytes",
+              "value": "177987584"
+            },
+            {
+              "key": "coldlineage.max_date",
+              "value": "2026-08-05"
+            },
+            {
+              "key": "coldlineage.measured_index_bytes",
+              "value": "32620544"
+            },
+            {
+              "key": "coldlineage.date_column",
+              "value": "event_date"
+            },
+            {
+              "key": "coldlineage.measured_heap_bytes",
+              "value": "145358848"
+            },
+            {
+              "key": "coldlineage.measurement_method",
+              "value": "pg_total_relation_size / pg_relation_size / pg_indexes_size"
+            },
+            {
+              "key": "coldlineage.demo_role",
+              "value": "HERO CASE -- warm table, dead history. Table-level usage says 'in use'; range-level analysis says the first four years are archivable."
+            }
+          ]
+        },
+        "editableProperties": null,
+        "schemaMetadata": {
+          "name": "coldlineage.public.patient_encounters",
+          "fields": [
+            {
+              "fieldPath": "encounter_id",
+              "nativeDataType": "bigint",
+              "type": "NUMBER",
+              "description": "Surrogate primary key."
+            },
+            {
+              "fieldPath": "patient_id",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Pseudonymous patient identifier."
+            },
+            {
+              "fieldPath": "event_date",
+              "nativeDataType": "date",
+              "type": "DATE",
+              "description": "Date the encounter occurred. Range key."
+            },
+            {
+              "fieldPath": "encounter_type",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Care setting for the encounter."
+            },
+            {
+              "fieldPath": "department",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Owning clinical department."
+            },
+            {
+              "fieldPath": "attending_provider_id",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "NPI of the attending provider."
+            },
+            {
+              "fieldPath": "primary_diagnosis_code",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "ICD-10-CM principal diagnosis."
+            },
+            {
+              "fieldPath": "length_of_stay_days",
+              "nativeDataType": "integer",
+              "type": "NUMBER",
+              "description": "Inpatient length of stay; 0 for ambulatory."
+            },
+            {
+              "fieldPath": "total_charges",
+              "nativeDataType": "numeric(12,2)",
+              "type": "NUMBER",
+              "description": "Gross charges posted for the encounter."
+            },
+            {
+              "fieldPath": "payer",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Primary payer at time of service."
+            },
+            {
+              "fieldPath": "region",
+              "nativeDataType": "text",
+              "type": "STRING",
+              "description": "Facility region."
+            },
+            {
+              "fieldPath": "created_at",
+              "nativeDataType": "timestamp with time zone",
+              "type": "TIME",
+              "description": "Row insert time in the source system."
+            }
+          ]
+        },
+        "ownership": {
+          "owners": [
+            {
+              "owner": {
+                "urn": "urn:li:corpuser:maya.chen",
+                "username": "maya.chen",
+                "properties": {
+                  "displayName": "Maya Chen",
+                  "email": "maya.chen@example-health.org"
+                }
+              },
+              "ownershipType": {
+                "urn": "urn:li:ownershipType:__system__business_owner",
+                "info": {
+                  "name": "Business Owner"
+                }
+              }
+            },
+            {
+              "owner": {
+                "urn": "urn:li:corpuser:data-platform",
+                "username": "data-platform",
+                "properties": {
+                  "displayName": "Data Platform Team",
+                  "email": "data-platform@example-health.org"
+                }
+              },
+              "ownershipType": {
+                "urn": "urn:li:ownershipType:__system__technical_owner",
+                "info": {
+                  "name": "Technical Owner"
+                }
+              }
+            }
+          ]
+        },
+        "domain": {
+          "domain": {
+            "urn": "urn:li:domain:clinical-analytics",
+            "properties": {
+              "name": "Clinical Analytics"
+            }
+          }
+        },
+        "tags": {
+          "tags": [
+            {
+              "tag": {
+                "urn": "urn:li:tag:ColdLineageDemoEstate",
+                "name": "ColdLineageDemoEstate",
+                "properties": {
+                  "name": "ColdLineageDemoEstate"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:PHI",
+                "name": "PHI",
+                "properties": {
+                  "name": "PHI"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:PII",
+                "name": "PII",
+                "properties": {
+                  "name": "PII"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:HIPAA",
+                "name": "HIPAA",
+                "properties": {
+                  "name": "HIPAA"
+                }
+              }
+            },
+            {
+              "tag": {
+                "urn": "urn:li:tag:Tier2",
+                "name": "Tier2",
+                "properties": {
+                  "name": "Tier2"
+                }
+              }
+            }
+          ]
+        },
+        "glossaryTerms": {
+          "terms": [
+            {
+              "term": {
+                "urn": "urn:li:glossaryTerm:ProtectedHealthInformation",
+                "name": "ProtectedHealthInformation",
+                "properties": {
+                  "name": "ProtectedHealthInformation"
+                }
+              }
+            },
+            {
+              "term": {
+                "urn": "urn:li:glossaryTerm:ClinicalObservation",
+                "name": "ClinicalObservation",
+                "properties": {
+                  "name": "ClinicalObservation"
+                }
+              }
+            }
+          ]
+        },
+        "deprecation": {
+          "deprecated": false,
+          "note": "",
+          "decommissionTime": null,
+          "actor": "urn:li:corpuser:__datahub_system"
+        },
+        "subTypes": {
+          "typeNames": [
+            "Table"
+          ]
+        }
+      }
+    },
+    "extensions": {}
+  }
+}

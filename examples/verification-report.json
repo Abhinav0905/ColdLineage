@@ -1,0 +1,20 @@
+{
+  "_about": "Verification runs BEFORE any source row is deleted, and it is the whole safety argument. The parts are downloaded back OUT of object storage, re-hashed, and re-read as Parquet; the row count and the column set are compared against the source. Hashing the buffer you are about to upload proves nothing about what landed -- it is a checksum of your intent. Only when every check passes are the hot rows removed, in one transaction, and the range re-counted to confirm the delete matched exactly what was verified.",
+  "recorded_at": "2026-08-07T02:54:10.573684+00:00",
+  "run_id": 1,
+  "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+  "cutoff_date": "2023-01-01",
+  "object_uri": "s3://coldlineage-archive/patient_encounters/2023-01-01/b7f8e22ba2c2/",
+  "manifest_sha256": "654b75b9db4dff806433e85dfb0cfe3ed4e29a17fc1a0044c2f14e16b5f39bf5",
+  "parts": 11,
+  "bytes": 23253970,
+  "verification": {
+    "readback_sha256_match": true,
+    "readback_row_count": 516088,
+    "source_row_count": 516088,
+    "row_count_match": true,
+    "schema_match": true,
+    "passed": true,
+    "checked_at": "2026-08-07T02:54:09.250516Z"
+  }
+}

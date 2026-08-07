@@ -253,10 +253,14 @@ class Builder:
     """Accumulates MetadataChangeProposals and remembers what was built, so the
     end-of-run summary reports what was actually emitted rather than a guess."""
 
-    def __init__(self) -> None:
+    def __init__(self, gms: str | None = None, token: str | None = None) -> None:
         self.mcps: list[MCP] = []
         self.tally: dict[str, int] = {}
         self.entities: set[str] = set()
+        # Set when a live GMS is reachable, so whole-aspect writes can read the current
+        # value first and preserve what other writers put there.
+        self.gms = gms
+        self.token = token
 
     def add(self, urn: str, aspect, label: str) -> None:
         self.mcps.append(MCP(entityUrn=urn, aspect=aspect))
@@ -363,8 +367,26 @@ class Builder:
             for u, t in spec.owners
         ], lastModified=audit()), "ownership")
 
+        # globalTags is a whole-aspect write, so emitting only the estate's own tags would
+        # silently drop any tag another writer added -- including `cold-tier-archived`,
+        # which ColdLineage itself applies after an archive. Re-ingesting would quietly
+        # erase the very marker that tells downstream readers history is missing. Read the
+        # current tags first and union. This is the same hazard the backend's writeback
+        # docstring warns about for datasetProperties.
+        preserved: list[str] = []
+        existing = _read_existing_tags(self.gms, self.token, urn) if self.gms else []
+        estate_tags = {E.tag_urn(t) for t in spec.tags}
+        for tag_urn in existing:
+            if tag_urn not in estate_tags:
+                preserved.append(tag_urn)
+        if preserved:
+            print(f"    preserving {len(preserved)} externally-applied tag(s): "
+                  f"{', '.join(t.split(':')[-1] for t in preserved)}")
+
         self.add(urn, M.GlobalTagsClass(tags=[
             M.TagAssociationClass(tag=E.tag_urn(t)) for t in spec.tags
+        ] + [
+            M.TagAssociationClass(tag=t) for t in preserved
         ]), "globalTags")
 
         self.add(urn, M.GlossaryTermsClass(
@@ -643,6 +665,37 @@ class Builder:
 # --------------------------------------------------------------------------
 
 
+def _read_existing_tags(gms: str, token: str | None, urn: str, timeout: float = 8.0) -> list[str]:
+    """Current globalTags on an entity, so a whole-aspect write can union rather than
+    replace. Returns [] on any failure -- losing a preserved tag is bad, but failing the
+    whole ingest because the catalog was briefly unreachable is worse."""
+    import json as _json
+    import urllib.error
+    import urllib.request
+
+    query = (
+        "query($u:String!){dataset(urn:$u){tags{tags{tag{urn}}}}}"
+    )
+    body = _json.dumps({"query": query, "variables": {"u": urn}}).encode()
+    headers = {"Content-Type": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        req = urllib.request.Request(
+            gms.rstrip("/") + "/api/graphql", data=body, headers=headers
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            payload = _json.load(resp)
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
+        return []
+    dataset = ((payload.get("data") or {}).get("dataset")) or {}
+    return [
+        (t.get("tag") or {}).get("urn")
+        for t in ((dataset.get("tags") or {}).get("tags") or [])
+        if (t.get("tag") or {}).get("urn")
+    ]
+
+
 def probe_gms(gms: str, token: str | None, timeout: float = 6.0) -> tuple[bool, str]:
     import urllib.error
     import urllib.request
@@ -788,7 +841,9 @@ def main() -> int:  # noqa: C901
 
     # ---- 3. build --------------------------------------------------------
     print("[3/5] Building metadata change proposals")
-    b = Builder()
+    # Pass GMS through only when we are actually going to emit; in offline/dry-run mode
+    # there is nothing to preserve and no catalog to ask.
+    b = Builder(gms=args.gms if not args.out_file else None, token=args.token)
     b.platform_entities()
     for spec in E.TABLES:
         b.dataset(spec, live[spec.key])

@@ -1,0 +1,94 @@
+{
+  "dataset_urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+  "table": "patient_encounters",
+  "cutoff_date": "2023-01-01",
+  "rows": 516088,
+  "bytes": 23253970,
+  "parts": [
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00000.parquet",
+      "rows": 50000,
+      "bytes": 2255433,
+      "sha256": "68d6c13d68427a661137578db982473807cf93ae3e26df2d08882bdd379c589d"
+    },
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00001.parquet",
+      "rows": 50000,
+      "bytes": 2254309,
+      "sha256": "bfd4aea7cb9d0048335d7ef7cdf76a9d0e569b3c8c8d96a5d08f4015833ac4e2"
+    },
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00002.parquet",
+      "rows": 50000,
+      "bytes": 2254438,
+      "sha256": "066afc8d884d4222b1cdbe40fdc3fd51fe9984c9042b2b4b778b1c51d9582f2a"
+    },
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00003.parquet",
+      "rows": 50000,
+      "bytes": 2254744,
+      "sha256": "5b2285a81ab5984a57d8d247c0670dd6f44749cde3f95c2daaee05c3d50a681f"
+    },
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00004.parquet",
+      "rows": 50000,
+      "bytes": 2253220,
+      "sha256": "05461c6a271d1f376f3d443e1ae8c5f0bfab0074c39cd7290e2019cc7420c4be"
+    },
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00005.parquet",
+      "rows": 50000,
+      "bytes": 2253758,
+      "sha256": "c8873154bc850e4eddd7dfd1a308e9c55305c5c9050c29a58d24a30e86be8f28"
+    },
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00006.parquet",
+      "rows": 50000,
+      "bytes": 2252033,
+      "sha256": "4bf4b86379cc4cd707ad8310c7a794b8ae28bf6e5ca35c8fa0c69e8707e0bb85"
+    },
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00007.parquet",
+      "rows": 50000,
+      "bytes": 2253242,
+      "sha256": "bb86a7c7fe5a58001b61402d7aaf2506dc1f10e25f0801fd8eab2f098968508a"
+    },
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00008.parquet",
+      "rows": 50000,
+      "bytes": 2252577,
+      "sha256": "90e29a71e93c59e40f96e880811a4e906161fbaa7303df544186f7255106f1b2"
+    },
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00009.parquet",
+      "rows": 50000,
+      "bytes": 2253152,
+      "sha256": "5b54e6f719c680ee28a59e411be49e5568a4ea629bafe057592a5f20b99f2d00"
+    },
+    {
+      "key": "patient_encounters/2023-01-01/b7f8e22ba2c2/part-00010.parquet",
+      "rows": 16088,
+      "bytes": 717064,
+      "sha256": "7ac8b26b62aa54a2ef3e964b4f2daff2eb2d5fa67d49c3b74ed43aa20414afec"
+    }
+  ],
+  "sha256": "654b75b9db4dff806433e85dfb0cfe3ed4e29a17fc1a0044c2f14e16b5f39bf5",
+  "columns": [
+    "encounter_id",
+    "patient_id",
+    "event_date",
+    "encounter_type",
+    "department",
+    "attending_provider_id",
+    "primary_diagnosis_code",
+    "length_of_stay_days",
+    "total_charges",
+    "payer",
+    "region",
+    "created_at"
+  ],
+  "object_uri": "s3://coldlineage-archive/patient_encounters/2023-01-01/b7f8e22ba2c2/",
+  "manifest_uri": "s3://coldlineage-archive/patient_encounters/2023-01-01/b7f8e22ba2c2/manifest.json",
+  "verified_readback": true,
+  "created_at": "2026-08-07T02:54:08.975602Z"
+}

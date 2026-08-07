@@ -1,0 +1,56 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.330981+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDownstream",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.billing_ledger,PROD)",
+    "count": 50
+  },
+  "response": {
+    "data": {
+      "searchAcrossLineage": {
+        "total": 3,
+        "searchResults": [
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dashboard:(superset,finance_close_dashboard)",
+              "type": "DASHBOARD",
+              "dashboardPlatform": {
+                "name": "superset"
+              },
+              "dashboardProperties": {
+                "name": "Monthly Finance Close"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,finance_pipelines,PROD),revenue_recognition_job)",
+              "type": "DATA_JOB",
+              "jobId": "revenue_recognition_job",
+              "dataJobProperties": {
+                "name": "revenue_recognition_job"
+              }
+            }
+          },
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:chart:(superset,ar_aging_chart)",
+              "type": "CHART",
+              "chartPlatform": {
+                "name": "superset"
+              },
+              "chartProperties": {
+                "name": "AR Aging Buckets"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

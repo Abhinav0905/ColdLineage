@@ -1,0 +1,453 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.687041+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageQueries",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "count": 50
+  },
+  "response": {
+    "data": {
+      "listQueries": {
+        "total": 5,
+        "queries": [
+          {
+            "urn": "urn:li:query:coldlineage-patient_encounters-care_gap_closure_chart",
+            "properties": {
+              "name": "Care Gap Closure Rate -- patient_encounters",
+              "description": "Preventive-encounter share by diagnosis for the current plan year.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT e.primary_diagnosis_code,\n       count(*) FILTER (WHERE e.encounter_type = 'preventive') AS preventive_encounters,\n       count(*)                                                AS total_encounters\nFROM public.patient_encounters e\nWHERE e.event_date >= DATE '2025-08-01'\nGROUP BY e.primary_diagnosis_code\nORDER BY total_encounters DESC\nLIMIT 25",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1786007820000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1786007820000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "1204"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "CHART"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:chart:(superset,care_gap_closure_chart)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-06T09:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "superset"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "Care Gap Closure Rate"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "care_gap_closure_chart"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "event_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-patient_encounters-encounter_readmission_etl",
+            "properties": {
+              "name": "encounter_readmission_etl -- patient_encounters",
+              "description": "Daily 30-day readmission flagging job. Only looks at the recent tail.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT e.patient_id,\n       e.event_date,\n       e.department,\n       e.length_of_stay_days,\n       lead(e.event_date) OVER (PARTITION BY e.patient_id ORDER BY e.event_date) AS next_event_date\nFROM public.patient_encounters e\nWHERE e.event_date >= CURRENT_DATE - INTERVAL '90 days'",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1785989820000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1785989820000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "365"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "DATA_JOB"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:dataJob:(urn:li:dataFlow:(airflow,clinical_pipelines,PROD),encounter_readmission_etl)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-06T04:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "airflow"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "encounter_readmission_etl"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "encounter_readmission_etl"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "event_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-patient_encounters-encounters_monthly_agg",
+            "properties": {
+              "name": "encounters_monthly_agg -- patient_encounters",
+              "description": "Incremental dbt model rolling encounters up to department-month. Rebuilds an 18-month trailing window each night.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT date_trunc('month', e.event_date)::date AS month_start,\n       e.department,\n       e.payer,\n       count(*)             AS encounters,\n       sum(e.total_charges) AS charges\nFROM public.patient_encounters e\nWHERE date_trunc('month', e.event_date) >= date_trunc('month', CURRENT_DATE - INTERVAL '18 months')\nGROUP BY 1, 2, 3",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1785986220000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1785986220000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "540"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "DATASET"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.encounters_monthly_agg,PROD)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-06T03:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "dbt"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "encounters_monthly_agg"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "encounters_monthly_agg"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "event_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+                }
+              },
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:dbt,coldlineage.analytics.encounters_monthly_agg,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-patient_encounters-quarterly_compliance_dashboard",
+            "properties": {
+              "name": "Quarterly Compliance Dashboard -- patient_encounters",
+              "description": "Quarterly encounter-volume and charge attestation reviewed by the compliance committee. Reaches back to the start of the current attestation cycle.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT e.region,\n       e.encounter_type,\n       date_trunc('quarter', e.event_date)::date AS quarter_start,\n       count(*)                                  AS encounters,\n       sum(e.total_charges)                      AS total_charges\nFROM public.patient_encounters e\nWHERE e.event_date BETWEEN DATE '2024-01-01' AND CURRENT_DATE\nGROUP BY 1, 2, 3\nORDER BY 3 DESC, 1",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1785827820000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1785827820000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "96"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "DASHBOARD"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "1"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:dashboard:(superset,quarterly_compliance_dashboard)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-08-04T07:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "superset"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "Quarterly Compliance Dashboard"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "quarterly_compliance_dashboard"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "event_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+                }
+              }
+            ]
+          },
+          {
+            "urn": "urn:li:query:coldlineage-patient_encounters-patient_ltv_model",
+            "properties": {
+              "name": "Patient Lifetime Value Model -- patient_encounters",
+              "description": "Gradient-boosted lifetime-value estimate used for outreach prioritisation. Retrained monthly on a rolling 24-month window.",
+              "source": "SYSTEM",
+              "statement": {
+                "value": "SELECT e.patient_id,\n       count(*)                   AS encounter_count,\n       sum(e.total_charges)       AS lifetime_charges,\n       avg(e.length_of_stay_days) AS avg_length_of_stay,\n       max(e.event_date)          AS last_seen\nFROM public.patient_encounters e\nWHERE e.event_date > (NOW() - INTERVAL '24 months')::date\nGROUP BY e.patient_id",
+                "language": "SQL"
+              },
+              "created": {
+                "time": 1785464220000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "lastModified": {
+                "time": 1785464220000,
+                "actor": "urn:li:corpuser:coldlineage"
+              },
+              "customProperties": [
+                {
+                  "key": "coldlineage.subject_urn",
+                  "value": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+                },
+                {
+                  "key": "coldlineage.run_count",
+                  "value": "48"
+                },
+                {
+                  "key": "coldlineage.anchor_date",
+                  "value": "2026-08-06"
+                },
+                {
+                  "key": "coldlineage.carrier_urn",
+                  "value": "urn:li:dataJob:(urn:li:dataFlow:(airflow,ml_training,PROD),patient_ltv_training)"
+                },
+                {
+                  "key": "coldlineage.consumer_type",
+                  "value": "MLMODEL"
+                },
+                {
+                  "key": "coldlineage.synthetic",
+                  "value": "true"
+                },
+                {
+                  "key": "coldlineage.lineage_degree",
+                  "value": "2"
+                },
+                {
+                  "key": "coldlineage.consumer_urn",
+                  "value": "urn:li:mlModel:(urn:li:dataPlatform:mlflow,patient_ltv_model,PROD)"
+                },
+                {
+                  "key": "coldlineage.last_run_at",
+                  "value": "2026-07-31T02:17:00+00:00"
+                },
+                {
+                  "key": "coldlineage.consumer_platform",
+                  "value": "mlflow"
+                },
+                {
+                  "key": "coldlineage.source",
+                  "value": "coldlineage-demo-estate"
+                },
+                {
+                  "key": "coldlineage.dialect",
+                  "value": "postgres"
+                },
+                {
+                  "key": "coldlineage.consumer_name",
+                  "value": "Patient Lifetime Value Model"
+                },
+                {
+                  "key": "coldlineage.consumer_key",
+                  "value": "patient_ltv_model"
+                },
+                {
+                  "key": "coldlineage.subject_date_column",
+                  "value": "event_date"
+                }
+              ]
+            },
+            "subjects": [
+              {
+                "dataset": {
+                  "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

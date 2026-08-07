@@ -1,0 +1,32 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.672448+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDownstream",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.patient_encounters,PROD)",
+    "count": 1
+  },
+  "response": {
+    "data": {
+      "searchAcrossLineage": {
+        "total": 7,
+        "searchResults": [
+          {
+            "degree": 2,
+            "entity": {
+              "urn": "urn:li:dashboard:(superset,executive_kpi_dashboard)",
+              "type": "DASHBOARD",
+              "dashboardPlatform": {
+                "name": "superset"
+              },
+              "dashboardProperties": {
+                "name": "Executive KPI Dashboard"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

@@ -1,7 +1,9 @@
-import sys, os
+import os
+import sys
 from datetime import date
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "backend"))
-sys.path.insert(0, "/Users/mac001/Documents/P.D/coldlineage- DataHub-Hackathon-10thAug/backend")
+
+# backend/tests/ -> backend/, so `app` imports regardless of where this is run from.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services.window import HistoryWindowExtractor
 

@@ -1,0 +1,30 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.512895+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDownstream",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.claims_history,PROD)",
+    "count": 1
+  },
+  "response": {
+    "data": {
+      "searchAcrossLineage": {
+        "total": 3,
+        "searchResults": [
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dataJob:(urn:li:dataFlow:(airflow,compliance_pipelines,PROD),annual_audit_extract)",
+              "type": "DATA_JOB",
+              "jobId": "annual_audit_extract",
+              "dataJobProperties": {
+                "name": "annual_audit_extract"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

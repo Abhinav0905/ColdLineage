@@ -1,0 +1,32 @@
+{
+  "recorded_at": "2026-08-07T02:54:00.429823+00:00",
+  "gms_url": "http://localhost:8090",
+  "operation": "coldlineageDownstream",
+  "variables": {
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.care_events_live,PROD)",
+    "count": 1
+  },
+  "response": {
+    "data": {
+      "searchAcrossLineage": {
+        "total": 5,
+        "searchResults": [
+          {
+            "degree": 1,
+            "entity": {
+              "urn": "urn:li:dashboard:(superset,operations_command_dashboard)",
+              "type": "DASHBOARD",
+              "dashboardPlatform": {
+                "name": "superset"
+              },
+              "dashboardProperties": {
+                "name": "Operations Command Centre"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "extensions": {}
+  }
+}

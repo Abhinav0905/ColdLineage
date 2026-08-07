@@ -28,14 +28,18 @@ The specific things that must hold:
                 carries a Provenance whose source is one of the declared values.
   the hero      patient_encounters at the hero cutoff is archivable, and the
                 binding constraint is the consumer consumers.py says it is.
-  the killer    lab_results is cold by every table-level signal AND still refuses
+  the sweep     the SAME table, the SAME consumers, only the cutoff moving: the
+                verdict must walk SAFE -> TIGHT -> BLOCKED and never get safer as
+                the cutoff moves later. This is the product's core claim.
+  the killer    lab_results is unused by every table-level signal AND still refuses
                 to archive at any cutoff, because of an unbounded consumer.
   legal hold    claims_history is blocked by policy even at a cutoff its consumers
                 would allow.
   retention     billing_ledger flips from blocked to allowed purely by moving the
                 cutoff, with nothing else changing.
-  execute       plan -> execute -> verified manifest -> DataHub write-back, and a
-                restore that verifies the checksum.
+  execute       plan -> execute -> verified manifest -> DataHub write-back, and the
+                warehouse afterwards actually missing the range that was archived.
+  restore       rehydration that re-checks the checksum before loading a row.
 
 Exit code 0 only if every check passes.
 """
@@ -78,6 +82,14 @@ CLAIMS_CUTOFF = date(2020, 1, 1)          # consumers fine; ACTIVE legal hold mu
 LAB_CUTOFF = date(2022, 1, 1)             # looks archivable; unbounded consumer must veto
 LEDGER_ILLEGAL_CUTOFF = date(2022, 1, 1)  # breaches the 7-year retention floor
 LEDGER_LEGAL_CUTOFF = date(2018, 1, 1)    # comfortably inside it
+
+# One table, one set of consumers, seven dates. The verdict must walk
+# SAFE -> TIGHT -> BLOCKED as the cutoff crosses the earliest window still read
+# (2024-01-01), and must never move back toward safe.
+SWEEP_CUTOFFS = [
+    date(2020, 1, 1), date(2022, 1, 1), date(2023, 1, 1), date(2023, 11, 15),
+    date(2024, 1, 1), date(2024, 3, 1), date(2025, 6, 1),
+]
 
 
 class Failure(Exception):
@@ -380,9 +392,28 @@ def main() -> int:  # noqa: C901
         resolving it against today. consumers.py never reaches the backend, so a
         match means the backend really did read the statement out of DataHub and
         work the bound out for itself.
+
+        One documented exception, and it is a feature rather than a fudge. A
+        consumer more than one hop from the subject does not read the subject: it
+        reads something that does. ContextService._resolve_mediated therefore
+        hands it the EARLIEST bound of everything closer to the subject, which is
+        the most restrictive bound available -- it can only over-protect. So for a
+        degree>1 consumer the oracle's `earliest_date_read=None` is satisfied by
+        either no bound at all or an inherited bound no later than the tightest
+        directly-evidenced one.
         """
         v = r.post(f"/datasets/{ids['patient_encounters']}/simulate",
                    {"cutoff_date": HERO_CUTOFF.isoformat()})[1]
+
+        # The most restrictive bound any directly-reading consumer imposes. An
+        # inherited bound may not be later than this or it would be permissive.
+        direct_bounds = [
+            c.expectation.earliest_date_read
+            for c in C.for_table("patient_encounters")
+            if c.degree == 1 and c.expectation.earliest_date_read is not None
+        ]
+        tightest_direct = min(direct_bounds) if direct_bounds else None
+
         problems = []
         checked = 0
         for c in C.for_table("patient_encounters"):
@@ -400,7 +431,17 @@ def main() -> int:  # noqa: C901
             got_date = w.get("earliest_date_read")
             if want_date is None:
                 if got_date is not None:
-                    problems.append(f"{c.key}: expected no bound, got {got_date}")
+                    if c.degree <= 1:
+                        problems.append(f"{c.key}: reads the subject directly and has no "
+                                        f"provable window, yet reported {got_date}. A "
+                                        f"degree-1 consumer with no SQL must stay unbounded")
+                    elif tightest_direct is not None and \
+                            date.fromisoformat(got_date) > tightest_direct:
+                        problems.append(
+                            f"{c.key}: inherited {got_date}, which is LATER than the "
+                            f"tightest directly-evidenced bound {tightest_direct}. An "
+                            f"inherited bound must be conservative, never permissive")
+                    # else: inherited a valid, conservative bound -- see the docstring
             else:
                 if got_date is None:
                     problems.append(f"{c.key}: expected {want_date}, got none")
@@ -441,25 +482,94 @@ def main() -> int:  # noqa: C901
         r.check(f"simulate @ {HERO_UNSAFE_CUTOFF} is refused (the cutoff is the variable)",
                 _hero_unsafe)
 
+    def _sweep():
+        """The product's central claim, as an assertion.
+
+        Same table, same consumers, same instant -- only the cutoff moves. The
+        verdict has to walk SAFE_TO_ARCHIVE -> ARCHIVE_WITH_REHYDRATION ->
+        DO_NOT_ARCHIVE as the cutoff crosses a window somebody is still reading,
+        and it must never get *safer* as the cutoff moves later. A system that can
+        only answer at table level cannot produce this sequence at all.
+        """
+        rank = {"SAFE_TO_ARCHIVE": 0, "ARCHIVE_WITH_REHYDRATION": 1, "DO_NOT_ARCHIVE": 2}
+        seen = []
+        for cutoff in SWEEP_CUTOFFS:
+            v = r.post(f"/datasets/{ids['patient_encounters']}/simulate",
+                       {"cutoff_date": cutoff.isoformat()})[1]
+            need(v["recommendation"] in VALID_RECOMMENDATIONS,
+                 f"{cutoff}: recommendation {v['recommendation']!r}")
+            seen.append((cutoff, v["recommendation"], v.get("headroom_days")))
+
+        # 1. monotonic: never becomes more permissive as the cutoff moves later
+        for (c1, r1, _), (c2, r2, _) in zip(seen, seen[1:]):
+            need(rank[r2] >= rank[r1],
+                 f"moving the cutoff from {c1} to {c2} made the verdict SAFER "
+                 f"({r1} -> {r2}). A later cutoff archives strictly more rows, so it "
+                 f"can never be safer")
+
+        # 2. headroom shrinks by exactly the number of days the cutoff moved
+        bounded = [(c, h) for c, _, h in seen if h is not None]
+        for (c1, h1), (c2, h2) in zip(bounded, bounded[1:]):
+            moved = (c2 - c1).days
+            need(h1 - h2 == moved,
+                 f"cutoff moved {moved}d from {c1} to {c2} but headroom moved "
+                 f"{h1 - h2}d ({h1} -> {h2}); headroom is defined as "
+                 f"earliest_date_read - cutoff and must track it exactly")
+
+        # 3. all three verdicts actually appear
+        verdicts = [v for _, v, _ in seen]
+        for wanted in ("SAFE_TO_ARCHIVE", "ARCHIVE_WITH_REHYDRATION", "DO_NOT_ARCHIVE"):
+            need(wanted in verdicts,
+                 f"the sweep never produced {wanted}; it went {verdicts}. The whole "
+                 f"claim is that the RANGE decides, so all three states must be "
+                 f"reachable on one table by moving the date alone")
+        return " -> ".join(f"{c}:{v}" for c, v, _ in seen)
+
+    if "patient_encounters" in ids:
+        r.check("the cutoff sweep flips the verdict SAFE -> TIGHT -> BLOCKED, monotonically",
+                _sweep)
+
     # ---------------- THE KILLER ----------------
     print("\nkiller case: lab_results -- cold table, unbounded consumer")
 
     def _killer_looks_cold():
+        """The setup for the killer case: every table-level signal says 'nobody is
+        reading this'.
+
+        Note what is NOT asserted: that the temperature score itself reads cold.
+        The score deliberately fails CLOSED -- an input it cannot establish counts
+        as hot, and DataHub reports no active usage bucket for this table, so
+        recency scores 1.00 and names itself as UNKNOWN in `temperature.inputs`.
+        Asserting a cold score would be asserting that a missing signal is
+        evidence of absence, which is the exact bug that deletes production data.
+        What matters is that the score is not the gate: the range verdict is.
+        """
         d = r.get(f"/datasets/{ids['lab_results']}")
         ctx = d.get("context") or {}
+        temp = d.get("temperature") or {}
         need(ctx.get("query_count_30d") == 0,
              f"query_count_30d is {ctx.get('query_count_30d')}, expected 0 -- the "
              f"whole point is that table-level telemetry says 'dead'")
         need(ctx.get("distinct_users_30d") == 0,
              f"distinct_users_30d is {ctx.get('distinct_users_30d')}, expected 0")
-        cls = (d.get("temperature") or {}).get("classification")
-        need(cls in ("COLD", "FROZEN", "COOL"),
-             f"temperature is {cls}; with zero queries and zero users a "
-             f"dataset-level score should read cold")
-        return f"{cls}, 0 queries / 0 users in 30 days -- looks archivable"
+        need(temp.get("frequency_component") == 0,
+             f"frequency_component is {temp.get('frequency_component')}; zero queries "
+             f"in 30 days must contribute zero heat")
+        inputs = temp.get("inputs") or {}
+        need("access_recency" in inputs and "query_frequency" in inputs,
+             "temperature.inputs must name what fed each component, or the score "
+             "cannot be argued with")
+        # Whatever the score comes out at, it must be visible WHY.
+        need(any("UNKNOWN" in str(v) for v in inputs.values())
+             or temp.get("classification") in ("COLD", "FROZEN", "COOL"),
+             f"temperature is {temp.get('classification')} but no input is labelled "
+             f"UNKNOWN; a warm score with no missing signal to explain it is wrong: "
+             f"{inputs}")
+        return (f"{temp.get('classification')} ({temp.get('score')}), "
+                f"0 queries / 0 users in 30d, frequency component 0")
 
     if "lab_results" in ids:
-        r.check("table-level telemetry says lab_results is cold", _killer_looks_cold)
+        r.check("table-level telemetry reports lab_results unused", _killer_looks_cold)
 
     def _killer_blocks():
         v = r.post(f"/datasets/{ids['lab_results']}/simulate",
@@ -577,17 +687,40 @@ def main() -> int:  # noqa: C901
     print("\ncontrol case: care_events_live -- genuinely hot, correctly kept")
 
     def _hot():
+        """A genuinely hot table must be kept -- and it must be kept for a stated
+        reason, not by a score.
+
+        `archive_eligible` is deliberately NOT asserted false here. It reports only
+        the cutoff-INDEPENDENT blockers (legal hold, no date column, unbounded
+        consumers) and care_events_live has none of those. What refuses this table
+        is the cutoff-dependent check: its whole history is newer than its own
+        2-year retention floor, so every cutoff that would move a single row
+        breaches policy. That is the honest reason, and the plan has to carry it.
+        """
         d = r.get(f"/datasets/{ids['care_events_live']}")
         cls = (d.get("temperature") or {}).get("classification")
         need(cls in ("HOT", "WARM"),
              f"temperature is {cls}; this table is queried thousands of times a day")
-        need(d.get("archive_eligible") is False,
-             "a hot table with a retention floor newer than its own history should "
-             "not be archive_eligible")
-        return f"{cls}, archive_eligible=False"
+        min_date = d.get("min_date")
+        need(min_date is not None, "no measured min_date for care_events_live")
+
+        # Any cutoff that removes rows at all is newer than the retention floor.
+        cutoff = date.fromisoformat(d["max_date"])
+        status, plan = r.post(f"/datasets/{ids['care_events_live']}/plan",
+                              {"cutoff_date": cutoff.isoformat()}, expect=(200, 409))
+        blob = json.dumps(plan)
+        need("RETENTION_FLOOR" in blob,
+             f"a cutoff of {cutoff} on a table whose history starts at {min_date} "
+             f"must breach the {E.CARE_EVENTS_LIVE.policy.retention_years:g}-year "
+             f"retention floor, but the plan never mentions it: {blob[:220]}")
+        if status == 200:
+            need(plan.get("executable") is False,
+                 f"plan is marked executable despite {[b['code'] for b in plan.get('blockers') or []]}")
+        return (f"{cls}; plan @ {cutoff} refused -- "
+                f"{plan.get('executable_reason', f'HTTP {status}')}")
 
     if "care_events_live" in ids:
-        r.check("hot table is not offered for archival", _hot)
+        r.check("hot table is refused, and the refusal names the policy", _hot)
 
     # ---------------- execute ----------------
     print("\nexecution")
@@ -611,6 +744,7 @@ def main() -> int:  # noqa: C901
 
         if plan:
             assert isinstance(plan, dict)
+            pre = r.get(f"/datasets/{ids['patient_encounters']}")
 
             def _bad_hash():
                 status, _ = r.post("/execute",
@@ -655,6 +789,35 @@ def main() -> int:  # noqa: C901
                         f"write-back {len(ops)} ops written={wb.get('written')}")
 
             run = r.check("execute verifies the object before deleting anything", _execute)
+
+            def _warehouse_moved():
+                """A verified manifest is a claim about object storage. This is the
+                claim about the warehouse: the range is actually gone, exactly the
+                rows that were archived and no others, and the entity now says so."""
+                post = r.get(f"/datasets/{ids['patient_encounters']}")
+                man_rows = plan["rows_in_scope"]
+                need(post.get("row_count") == pre["row_count"] - man_rows,
+                     f"row_count went {pre['row_count']:,} -> {post.get('row_count'):,}; "
+                     f"expected exactly {man_rows:,} rows removed "
+                     f"({pre['row_count'] - man_rows:,})")
+                need(post.get("min_date") is not None
+                     and date.fromisoformat(post["min_date"]) >= HERO_CUTOFF,
+                     f"oldest remaining row is {post.get('min_date')}, which is still "
+                     f"before the cutoff {HERO_CUTOFF} -- the delete did not cover the "
+                     f"range that was archived")
+                need(post.get("max_date") == pre.get("max_date"),
+                     f"newest row changed from {pre.get('max_date')} to "
+                     f"{post.get('max_date')}; range archival must not touch recent rows")
+                need(post.get("archive_state") == "PARTIALLY_ARCHIVED",
+                     f"archive_state is {post.get('archive_state')!r} after a verified run")
+                need(post.get("archived_through") == HERO_CUTOFF.isoformat(),
+                     f"archived_through is {post.get('archived_through')!r}, "
+                     f"expected {HERO_CUTOFF.isoformat()}")
+                return (f"{pre['row_count']:,} -> {post['row_count']:,} rows, span now "
+                        f"{post['min_date']}..{post['max_date']}, {post['archive_state']}")
+
+            r.check("the warehouse really lost the range, and only the range",
+                    _warehouse_moved)
 
             def _runs():
                 rows = r.get("/runs")
