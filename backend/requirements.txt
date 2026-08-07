@@ -9,6 +9,4 @@ pyarrow==21.0.0
 boto3==1.40.5
 httpx==0.28.1
 python-dateutil==2.9.0.post0
-sqlglot==27.10.0
-networkx==3.5
-faker==37.5.3
+sqlglot==30.12.0

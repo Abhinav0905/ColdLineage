@@ -1,0 +1,150 @@
+# ColdLineage structured property definitions.
+#
+# Upsert into DataHub with:
+#   datahub properties upsert -f backend/app/datahub/properties.yaml
+#
+# Two groups:
+#
+#   1. POLICY (io.coldlineage.policy.*) -- inputs. A governance owner sets these on a
+#      dataset in DataHub. ColdLineage reads them; it never invents them. This is what
+#      moves retention and legal hold out of a hardcoded column and into the catalog,
+#      where they belong and where they are auditable.
+#
+#   2. ARCHIVE (io.coldlineage.archive.*) -- outputs. ColdLineage writes these after a
+#      verified archive so the catalog can answer "where did those rows go, are they
+#      intact, and how do I get them back?". Any agent or human that later queries this
+#      dataset inherits that context instead of silently reading a truncated table.
+#
+# Typed structured properties rather than untyped customProperties: they are validated,
+# they carry allowed_values, they are scoped by entity_types, and they survive other
+# writers instead of clobbering the datasetProperties aspect.
+
+- id: io.coldlineage.policy.retentionYears
+  qualified_name: io.coldlineage.policy.retentionYears
+  type: number
+  cardinality: SINGLE
+  display_name: Retention Floor (years)
+  entity_types:
+    - dataset
+  description: >-
+    Minimum number of years of history that must remain queryable in the hot tier
+    for this dataset, per data-retention policy. ColdLineage refuses any cutoff that
+    would breach this floor, independent of how cold the data looks.
+
+- id: io.coldlineage.policy.legalHold
+  qualified_name: io.coldlineage.policy.legalHold
+  type: string
+  cardinality: SINGLE
+  display_name: Legal Hold
+  entity_types:
+    - dataset
+  allowed_values:
+    - value: NONE
+      description: No active hold. Archival may proceed if other evidence supports it.
+    - value: ACTIVE
+      description: Active legal hold. All archival and deletion is blocked unconditionally.
+    - value: RELEASED
+      description: A hold existed and has been released. Archival may proceed.
+  description: >-
+    Litigation or regulatory hold status. ACTIVE is an unconditional blocker and is
+    evaluated separately from the temperature score, so that a cold-looking dataset
+    under hold can never be archived by an agent.
+
+- id: io.coldlineage.policy.legalHoldMatter
+  qualified_name: io.coldlineage.policy.legalHoldMatter
+  type: string
+  cardinality: SINGLE
+  display_name: Legal Hold Matter
+  entity_types:
+    - dataset
+  description: >-
+    Matter or case identifier justifying an ACTIVE legal hold, so the block is
+    attributable rather than anonymous.
+
+- id: io.coldlineage.policy.businessCriticality
+  qualified_name: io.coldlineage.policy.businessCriticality
+  type: number
+  cardinality: SINGLE
+  display_name: Business Criticality
+  entity_types:
+    - dataset
+  description: >-
+    Owner-declared criticality between 0.0 and 1.0. Contributes 12% of the temperature
+    score. Declared rather than inferred, because criticality is a business judgement
+    that usage telemetry cannot observe.
+
+- id: io.coldlineage.archive.state
+  qualified_name: io.coldlineage.archive.state
+  type: string
+  cardinality: SINGLE
+  display_name: Archive State
+  entity_types:
+    - dataset
+  allowed_values:
+    - value: HOT
+      description: Entire history resident in the hot tier.
+    - value: PARTIALLY_ARCHIVED
+      description: A historical date range has been moved to cold storage. Recent rows remain hot and queryable.
+    - value: REHYDRATING
+      description: An archived range is being restored to the hot tier.
+  description: >-
+    Whether part of this dataset's history now lives outside the warehouse. The value
+    that matters is PARTIALLY_ARCHIVED -- it warns any downstream reader or agent that
+    an unqualified scan of this table will silently return incomplete history.
+
+- id: io.coldlineage.archive.archivedThrough
+  qualified_name: io.coldlineage.archive.archivedThrough
+  type: date
+  cardinality: SINGLE
+  display_name: Archived Through
+  entity_types:
+    - dataset
+  description: >-
+    Exclusive cutoff. Rows with a date column value strictly before this date have been
+    moved to cold storage. Rows on or after it are still in the warehouse. This is the
+    single most useful fact for a downstream consumer.
+
+- id: io.coldlineage.archive.objectUri
+  qualified_name: io.coldlineage.archive.objectUri
+  type: string
+  cardinality: MULTIPLE
+  display_name: Archive Object URI
+  entity_types:
+    - dataset
+  description: >-
+    Object-store URI of the Parquet archive holding the moved range. MULTIPLE because a
+    dataset accumulates one archive object per executed run.
+
+- id: io.coldlineage.archive.sha256
+  qualified_name: io.coldlineage.archive.sha256
+  type: string
+  cardinality: MULTIPLE
+  display_name: Archive SHA-256
+  entity_types:
+    - dataset
+  description: >-
+    SHA-256 digest of the archived object, recomputed from the stored bytes after upload
+    and before any source row was deleted. Restoration recomputes and compares this digest
+    and refuses to rehydrate on mismatch.
+
+- id: io.coldlineage.archive.restoreSla
+  qualified_name: io.coldlineage.archive.restoreSla
+  type: string
+  cardinality: SINGLE
+  display_name: Restore SLA
+  entity_types:
+    - dataset
+  description: >-
+    How quickly the archived range can be made queryable again, so a consumer can decide
+    whether to request rehydration or redesign the query.
+
+- id: io.coldlineage.archive.lastRunId
+  qualified_name: io.coldlineage.archive.lastRunId
+  type: string
+  cardinality: SINGLE
+  display_name: Last Archive Run
+  entity_types:
+    - dataset
+  description: >-
+    Identifier of the most recent executed archive run, joining this dataset back to the
+    ColdLineage audit trail (plan, evidence, approver, verification report).

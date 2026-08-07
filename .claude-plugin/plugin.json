@@ -1,0 +1,8 @@
+{
+  "name": "coldlineage",
+  "version": "0.1.0",
+  "description": "Governed data tiering for DataHub. Decides whether a date range inside a still-hot table is safe to move to cold storage, proves it against every downstream consumer's actual read window, and writes archive provenance back to the catalog.",
+  "author": {
+    "name": "ColdLineage"
+  }
+}

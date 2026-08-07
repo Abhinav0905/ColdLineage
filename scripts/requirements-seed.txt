@@ -1,0 +1,39 @@
+# Dependencies for scripts/ -- seeding the demo warehouse and ingesting it into DataHub.
+#
+#   python -m venv .venv
+#   .venv/bin/pip install -r scripts/requirements-seed.txt
+#
+# Exact pins, because these scripts produce the evidence the demo is judged on and a
+# silent minor-version drift in the metadata SDK or the SQL parser changes what gets
+# written into the catalog.
+#
+# Verified together on Python 3.11.14 / macOS arm64 against DataHub OSS v1.7.0.
+
+# ---- DataHub -------------------------------------------------------------
+# [postgres]     first-party Postgres source used by scripts/recipes/postgres.yml
+# [profiling-ge] column profiling for that recipe. Note the extra pulls in
+#                acryl-great-expectations, Acryl's pydantic-2-compatible fork.
+#                Plain `great-expectations<0.16` pins pydantic<2 and will silently
+#                break acryl-datahub itself -- do not substitute it.
+acryl-datahub[datahub-rest,postgres,profiling-ge]==1.7.0
+
+# ---- Warehouse -----------------------------------------------------------
+# psycopg 3 for seeding: scripts/seed_warehouse.py streams ~3.6M rows through
+# COPY ... FROM STDIN via cursor.copy(), which psycopg2 does not expose as cleanly.
+psycopg[binary]==3.2.9
+# psycopg2 is the driver SQLAlchemy uses under DataHub's Postgres source. Pulled in
+# by acryl-datahub[postgres]; pinned here so the recipe and the seeder cannot drift.
+psycopg2-binary==2.9.12
+SQLAlchemy==1.4.54
+
+# ---- SQL parsing ---------------------------------------------------------
+# Used by `python scripts/consumers.py` to prove every consumer statement is valid
+# PostgreSQL before it is ingested as a DataHub query entity. The backend parses the
+# same statements with the same library after reading them back out of DataHub.
+sqlglot==30.12.0
+
+# ---- Transitive, pinned because they are load-bearing --------------------
+pydantic==2.11.10          # acryl-datahub needs >=2.4; GE 0.15 would force <2
+expandvars==1.1.2          # ${VAR:-default} expansion in the ingestion recipe
+PyYAML==6.0.3
+requests==2.34.2

@@ -1,0 +1,123 @@
+# ColdLineage -- first-party DataHub ingestion for the demo warehouse.
+#
+#   datahub ingest -c scripts/recipes/postgres.yml
+#
+# WHY THIS FILE EXISTS
+# --------------------
+# scripts/ingest_datahub.py hand-emits the things a connector cannot know: lineage
+# to dashboards and models, the real SQL each consumer runs, usage telemetry, and
+# the io.coldlineage.policy.* structured property values.
+#
+# This recipe does the part that should NOT be hand-emitted. It points DataHub's
+# own Postgres connector at the demo database and lets it discover the tables,
+# columns, types and constraints itself. The catalog entry for
+# public.patient_encounters is produced by the same first-party connector a real
+# deployment would use, which is the difference between "we populated DataHub" and
+# "we drew a picture of DataHub".
+#
+# ORDERING MATTERS
+# ----------------
+# bootstrap_datahub.sh runs this recipe BEFORE ingest_datahub.py, so the connector
+# establishes the datasets and the enrichment lands on top. Both write to the same
+# urns: urn:li:dataset:(urn:li:dataPlatform:postgres,coldlineage.public.<table>,PROD).
+# The Postgres source builds dataset names as <database>.<schema>.<table>, which is
+# why `database: coldlineage` below is load-bearing rather than cosmetic -- change
+# it and you get a second, half-populated copy of every entity.
+#
+# ENVIRONMENT
+#   DATAHUB_GMS_URL   default http://localhost:8080
+#   DATAHUB_TOKEN     optional; required when metadata service auth is enabled
+#   COLDLINEAGE_PG_*  host/port/user/password/database overrides
+
+pipeline_name: coldlineage_postgres_native
+
+source:
+  type: postgres
+  config:
+    host_port: "${COLDLINEAGE_PG_HOST:-localhost}:${COLDLINEAGE_PG_PORT:-5433}"
+    database: "${COLDLINEAGE_PG_DATABASE:-coldlineage}"
+    username: "${COLDLINEAGE_PG_USER:-coldlineage}"
+    password: "${COLDLINEAGE_PG_PASSWORD:-coldlineage}"
+
+    # PROD so the urns match what ingest_datahub.py and the backend expect.
+    env: PROD
+
+    # Only the demo estate. Without this the connector also catalogs the
+    # ColdLineage application's own bookkeeping tables (runs, audit_events),
+    # which are not part of the story and clutter the lineage graph.
+    schema_pattern:
+      allow:
+        - "^public$"
+    table_pattern:
+      allow:
+        - ".*\\.public\\.patient_encounters$"
+        - ".*\\.public\\.claims_history$"
+        - ".*\\.public\\.care_events_live$"
+        - ".*\\.public\\.lab_results$"
+        - ".*\\.public\\.billing_ledger$"
+
+    include_tables: true
+    include_views: false
+
+    # Table-to-table lineage is emitted by ingest_datahub.py from consumers.py,
+    # where the query text lives. Leave it off here so the two do not disagree.
+    include_view_lineage: false
+
+    # Which tables get profiled. This is a source-level setting, not a profiling
+    # sub-key -- putting it under `profiling:` is rejected as an extra field.
+    profile_pattern:
+      allow:
+        - ".*\\.public\\..*"
+
+    # Column-level profiling. Cheap here because every profiled aggregate is a
+    # single indexed pass and the estate is ~3.6M rows total. What this buys the
+    # demo is the min/max of each table's date column, held natively in DataHub
+    # rather than asserted by us -- which is exactly the kind of fact an archive
+    # decision should be able to cite.
+    #
+    # Requires the profiling extra:  pip install 'acryl-datahub[postgres,profiling-ge]'
+    # Set COLDLINEAGE_PROFILING=false to skip it on a slow machine.
+    profiling:
+      enabled: ${COLDLINEAGE_PROFILING:-true}
+      profile_table_level_only: false
+      # Quantiles, histograms and distinct-value counts are the expensive ones and
+      # none of them inform an archive decision.
+      turn_off_expensive_profiling_metrics: true
+      include_field_sample_values: false
+      include_field_distinct_value_frequencies: false
+      include_field_histogram: false
+      include_field_quantiles: false
+      include_field_median_value: false
+      include_field_stddev_value: false
+      # Exact min/max on the date column is the whole point, so do not sample.
+      use_sampling: false
+      max_number_of_fields_to_profile: 15
+      max_workers: 2
+      query_combiner_enabled: true
+      profile_table_size_limit: 20      # GB
+      profile_table_row_limit: 20000000
+      # Exact row counts, not the planner's estimate -- an archive plan that cites a
+      # row count should be citing a counted one.
+      profile_table_row_count_estimate_only: false
+      report_dropped_profiles: true
+
+    # Re-running the recipe should update the estate, not accumulate copies of it.
+    stateful_ingestion:
+      enabled: true
+      remove_stale_metadata: true
+
+transformers:
+  # Marks everything the connector produces as part of the demo estate, matching
+  # the coldlineage.synthetic stamp that ingest_datahub.py puts on its own output.
+  # Nothing in this repo should be able to pass itself off as a production catalog.
+  - type: simple_add_dataset_tags
+    config:
+      tag_urns:
+        - "urn:li:tag:ColdLineageDemoEstate"
+
+sink:
+  type: datahub-rest
+  config:
+    server: "${DATAHUB_GMS_URL:-http://localhost:8080}"
+    token: "${DATAHUB_TOKEN:-}"
+    max_threads: 4

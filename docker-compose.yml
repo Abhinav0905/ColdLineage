@@ -1,3 +1,14 @@
+# ColdLineage demo stack.
+#
+# This brings up the warehouse, the cold tier, the executor and the UI. It does NOT
+# bring up DataHub -- DataHub is a real external system here, started separately with
+# `datahub docker quickstart`, exactly as it would be in any environment where it was
+# already your catalog. See README for the two-command setup.
+#
+# DATAHUB_GMS_URL defaults to port 8090 rather than DataHub's usual 8080 because the
+# machine this was built on already had 8080 taken. Override it if yours is free:
+#   DATAHUB_GMS_URL=http://host.docker.internal:8080 docker compose up -d
+
 services:
   postgres:
     image: postgres:16
@@ -8,18 +19,25 @@ services:
     ports: ["5433:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
     healthcheck:
-      test: ["CMD-SHELL","pg_isready -U coldlineage"]
+      test: ["CMD-SHELL", "pg_isready -U coldlineage"]
       interval: 3s
       timeout: 3s
       retries: 20
+
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-    ports: ["9000:9000","9001:9001"]
+    ports: ["9000:9000", "9001:9001"]
     volumes: ["miniodata:/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || exit 0"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   backend:
     build: ./backend
     environment:
@@ -28,20 +46,29 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
       MINIO_BUCKET: coldlineage-archive
-      DATAHUB_GMS_URL: ${DATAHUB_GMS_URL:-http://host.docker.internal:8080}
+      # live  -> read and write a real DataHub
+      # replay -> serve the recorded GMS responses committed in examples/cassettes/
+      DATAHUB_MODE: ${DATAHUB_MODE:-live}
+      DATAHUB_GMS_URL: ${DATAHUB_GMS_URL:-http://host.docker.internal:8090}
       DATAHUB_TOKEN: ${DATAHUB_TOKEN:-}
-      DEMO_MODE: ${DEMO_MODE:-true}
+      CASSETTE_DIR: /app/cassettes
     ports: ["8000:8000"]
     depends_on:
       postgres: {condition: service_healthy}
       minio: {condition: service_started}
-    volumes: ["./backend/app:/app/app"]
+    volumes:
+      - "./backend/app:/app/app"
+      - "./examples/cassettes:/app/cassettes:ro"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   frontend:
     build: ./frontend
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api
     ports: ["3000:3000"]
     depends_on: [backend]
+
 volumes:
   pgdata:
   miniodata:

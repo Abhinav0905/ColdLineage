@@ -1,0 +1,16 @@
+{
+  "name": "coldlineage",
+  "metadata": {
+    "description": "Marketplace for ColdLineage, a DataHub-native data lifecycle toolkit. Provides the assess-data-temperature skill: range-level archive decisions backed by DataHub lineage, usage, query history and structured properties, with verified execution and writeback."
+  },
+  "owner": {
+    "name": "ColdLineage"
+  },
+  "plugins": [
+    {
+      "name": "coldlineage",
+      "source": "./",
+      "description": "Governed data tiering for DataHub. Decides whether a date range inside a still-hot table is safe to move to cold storage, proves it against every downstream consumer's actual read window, and writes archive provenance back to the catalog."
+    }
+  ]
+}
