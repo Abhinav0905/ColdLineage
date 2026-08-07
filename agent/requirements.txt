@@ -1,0 +1,6 @@
+# The agent runs in its own virtualenv (.venv-agent), separate from the backend:
+# anthropic[mcp] and the backend disagree on pinned pydantic/starlette versions,
+# and the agent is a client of the API rather than part of it.
+anthropic[mcp]==0.120.2
+mcp-server-datahub==0.6.0
+httpx==0.28.1

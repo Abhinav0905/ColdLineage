@@ -31,3 +31,4 @@ Thumbs.db
 # Local scratch — never commit run output; examples/ is curated by hand
 scratch/
 *.log
+.venv-agent/

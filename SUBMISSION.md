@@ -53,7 +53,17 @@ After a verified archive it contributes four things back: six typed archive prop
 `updateDeprecation`, a manifest link via `addLink`, and a `cold-tier-archived` tag. It deliberately
 never writes `datasetProperties` wholesale, because that clobbers other writers' custom properties.
 Ingestion uses the first-party `postgres` connector plus the `acryl-datahub` SDK.
-`skills/assess-data-temperature/` is a loadable DataHub Skill and is the reasoning layer.
+
+**The agent.** `agent/` is a Claude agent (`claude-opus-5`) that reads DataHub through the official
+**MCP Server** — `search`, `get_lineage`, `get_dataset_queries`, `get_entities`,
+`list_schema_fields`, `get_lineage_paths_between` — and acts through five constrained operations.
+The tool list is the security model: it holds no database credentials, no object-store client, and
+no ability to issue SQL, and the MCP server runs with mutation tools off, so it cannot write to the
+catalog on its own. `coldlineage_execute_plan` blocks on a human; decline and the tool tells the
+model to stop rather than letting it route around the gate. That is a stronger guarantee than any
+system-prompt instruction, and it holds even if the model is wrong or the prompt is attacked.
+`skills/assess-data-temperature/` encodes the same procedure as a loadable **DataHub Skill** for
+anyone already in a skills runtime.
 
 ## What DataHub already does that we did not rebuild
 

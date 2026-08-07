@@ -107,9 +107,14 @@ typed, validated, `entity_types`-scoped, and survive other writers. The definiti
 **Ingest** uses the first-party `postgres` connector plus the `acryl-datahub` Python SDK, so the
 demo estate is real catalog content with real URNs — not hand-built fixtures.
 
-**Agent surface**: [`skills/assess-data-temperature/`](skills/assess-data-temperature/) is a
-loadable DataHub Skill. It is the reasoning layer; the FastAPI service below is the only thing that
-can touch data. See [Trust boundary](#trust-boundary).
+**Agent surface** — two, sharing one executor:
+
+| | |
+|---|---|
+| [`agent/`](agent/) | A standalone agent (`claude-opus-5`) that **reads DataHub through the official [MCP Server](https://github.com/acryldata/mcp-server-datahub)** — `search`, `get_lineage`, `get_dataset_queries`, `get_entities`, `list_schema_fields`, `get_lineage_paths_between` — and acts through five constrained operations, blocking on a human before any delete. |
+| [`skills/assess-data-temperature/`](skills/assess-data-temperature/) | The same decision procedure as a **loadable DataHub Skill**, for anyone already in a skills runtime (Claude Code, Cursor, …), driving the `datahub` CLI. |
+
+Neither holds database credentials. See [Trust boundary](#trust-boundary).
 
 ## Two commands
 
@@ -196,7 +201,7 @@ RESTORE  516,088 rows rehydrated, SHA-256 verified
 ```mermaid
 flowchart LR
   subgraph reasoning["Reasoning — no data-plane credentials"]
-    S[assess-data-temperature Skill]
+    S[agent/ via MCP<br/>or the DataHub Skill]
   end
   subgraph context["Context — DataHub"]
     DH[(GMS)]
@@ -216,10 +221,14 @@ flowchart LR
   M --> R
 ```
 
-The reasoning layer never receives DDL/DML authority. It calls four constrained operations. A human
-stands between plan and execute. **Approval is a plan hash** binding dataset + cutoff + row count +
-verdict — if live state drifted since the plan was shown, execution is refused rather than
-proceeding against different data.
+The reasoning layer never receives DDL/DML authority — no database credentials, no object-store
+client, no ability to issue SQL. It gets read-only MCP tools plus five constrained operations, and
+that tool list is the guarantee: it holds even if the model is wrong or the prompt is attacked.
+A human stands between plan and execute. **Approval is a plan hash** binding dataset + cutoff +
+row count + verdict — if live state drifted since the plan was shown, execution is refused rather
+than proceeding against different data.
+
+This is deliberately the opposite of handing a model a database connection and a careful prompt.
 
 And the ordering inside `execute` is the safety argument:
 
@@ -269,6 +278,7 @@ estimate is labelled as one in the API response.
 | [`backend/app/services/simulation.py`](backend/app/services/simulation.py) | cutoff → verdict |
 | [`backend/app/services/archive.py`](backend/app/services/archive.py) | the constrained executor |
 | [`backend/app/datahub/`](backend/app/datahub/) | GraphQL reads, writeback, cassettes, property definitions |
+| [`agent/`](agent/) | the MCP-driven agent — the tool list *is* the security model |
 | [`skills/assess-data-temperature/`](skills/assess-data-temperature/) | the loadable DataHub Skill |
 | [`scripts/`](scripts/) | estate, consumers + their real SQL, DataHub ingestion |
 | [`examples/`](examples/) | artifacts from a real run — readable without running anything |
