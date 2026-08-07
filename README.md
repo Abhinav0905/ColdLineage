@@ -111,10 +111,18 @@ demo estate is real catalog content with real URNs — not hand-built fixtures.
 
 | | |
 |---|---|
-| [`agent/`](agent/) | A standalone agent (`claude-opus-5`) that **reads DataHub through the official [MCP Server](https://github.com/acryldata/mcp-server-datahub)** — `search`, `get_lineage`, `get_dataset_queries`, `get_entities`, `list_schema_fields`, `get_lineage_paths_between` — and acts through five constrained operations, blocking on a human before any delete. |
+| [`agent/`](agent/) | A standalone agent that **reads DataHub through the official [MCP Server](https://github.com/acryldata/mcp-server-datahub)** — `search`, `get_lineage`, `get_dataset_queries`, `get_entities`, `list_schema_fields`, `get_lineage_paths_between` — and acts through six constrained operations, blocking on a human before any delete. Runs on **Claude or GPT**. |
 | [`skills/assess-data-temperature/`](skills/assess-data-temperature/) | The same decision procedure as a **loadable DataHub Skill**, for anyone already in a skills runtime (Claude Code, Cursor, …), driving the `datahub` CLI. |
 
 Neither holds database credentials. See [Trust boundary](#trust-boundary).
+
+The agent being provider-agnostic is the same argument as the trust boundary, made twice: if the
+safety of the system depended on which model you plugged in, it was never safe. One JSON Schema
+definition becomes both Anthropic and OpenAI tool formats, one system prompt serves both, and the
+approval gate lives in the provider-neutral executor where no driver can route around it — with
+tests asserting the two providers are handed identical tools and that the executor imports no model
+SDK. The OpenAI driver targets the bare Responses API, so `OPENAI_BASE_URL` also points it at
+Azure, vLLM, Ollama, or a self-hosted model.
 
 ## Two commands
 
@@ -222,8 +230,9 @@ flowchart LR
 ```
 
 The reasoning layer never receives DDL/DML authority — no database credentials, no object-store
-client, no ability to issue SQL. It gets read-only MCP tools plus five constrained operations, and
-that tool list is the guarantee: it holds even if the model is wrong or the prompt is attacked.
+client, no ability to issue SQL. It gets read-only MCP tools plus six constrained operations, and
+that tool list is the guarantee: it holds even if the model is wrong or the prompt is attacked —
+or, indeed, if it is a different model entirely.
 A human stands between plan and execute. **Approval is a plan hash** binding dataset + cutoff +
 row count + verdict — if live state drifted since the plan was shown, execution is refused rather
 than proceeding against different data.

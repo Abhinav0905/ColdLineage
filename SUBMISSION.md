@@ -54,14 +54,24 @@ After a verified archive it contributes four things back: six typed archive prop
 never writes `datasetProperties` wholesale, because that clobbers other writers' custom properties.
 Ingestion uses the first-party `postgres` connector plus the `acryl-datahub` SDK.
 
-**The agent.** `agent/` is a Claude agent (`claude-opus-5`) that reads DataHub through the official
-**MCP Server** — `search`, `get_lineage`, `get_dataset_queries`, `get_entities`,
-`list_schema_fields`, `get_lineage_paths_between` — and acts through five constrained operations.
-The tool list is the security model: it holds no database credentials, no object-store client, and
-no ability to issue SQL, and the MCP server runs with mutation tools off, so it cannot write to the
-catalog on its own. `coldlineage_execute_plan` blocks on a human; decline and the tool tells the
-model to stop rather than letting it route around the gate. That is a stronger guarantee than any
-system-prompt instruction, and it holds even if the model is wrong or the prompt is attacked.
+**The agent.** `agent/` reads DataHub through the official **MCP Server** — `search`,
+`get_lineage`, `get_dataset_queries`, `get_entities`, `list_schema_fields`,
+`get_lineage_paths_between` — and acts through six constrained operations. The tool list is the
+security model: it holds no database credentials, no object-store client, and no ability to issue
+SQL, and the MCP server runs with mutation tools off, so it cannot write to the catalog on its own.
+`coldlineage_execute_plan` blocks on a human; decline and the tool tells the model to stop rather
+than letting it route around the gate. That is a stronger guarantee than any system-prompt
+instruction, and it holds even if the model is wrong or the prompt is attacked.
+
+It runs on **Claude or GPT**, which is the same argument made twice: if a system's safety depended
+on which model you plugged in, it was never safe. One JSON Schema definition is converted to both
+Anthropic and OpenAI tool formats, one system prompt serves both, and the approval gate lives in the
+provider-neutral executor — so no driver can route around it. Tests assert that the two providers
+are handed identical tool sets and that the executor imports no model SDK, which makes the claim
+checkable rather than rhetorical. The OpenAI driver targets the bare Responses API, so
+`OPENAI_BASE_URL` also points it at Azure, vLLM, Ollama or a self-hosted model. Forty-one tests
+cover the agent offline, including an end-to-end run of the real loop, MCP bridge, executor and
+approval gate against a scripted model — no key required to verify it.
 `skills/assess-data-temperature/` encodes the same procedure as a loadable **DataHub Skill** for
 anyone already in a skills runtime.
 

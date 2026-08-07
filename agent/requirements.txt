@@ -1,6 +1,18 @@
-# The agent runs in its own virtualenv (.venv-agent), separate from the backend:
-# anthropic[mcp] and the backend disagree on pinned pydantic/starlette versions,
-# and the agent is a client of the API rather than part of it.
-anthropic[mcp]==0.120.2
+# The agent runs in its own virtualenv (.venv-agent). It is a *client* of the
+# ColdLineage API, not part of it, and the model SDKs disagree with the backend
+# on pinned pydantic/starlette versions — so keeping them apart is deliberate.
+#
+#   python3.11 -m venv .venv-agent
+#   .venv-agent/bin/pip install -r agent/requirements.txt
+
+# --- DataHub, read over the official MCP Server ---
 mcp-server-datahub==0.6.0
+
+# --- model providers: install one, or both ---
+# Both drivers implement the same interface against the same executor. Neither
+# is required; the CLI auto-detects whichever key is present.
+anthropic[mcp]==0.120.2
+openai==2.53.0
+
+# --- transport ---
 httpx==0.28.1
