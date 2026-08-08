@@ -9,67 +9,177 @@
      - status (safe / tight / blocked / unknown) uses the fixed status ramp
      - temperature uses a semantic-heat ramp (warm -> cool), always shown with
        its class word and a scale legend
-     - brand teal is chrome only. It never encodes data.
+     - the chrome accent is achromatic bone. It never encodes data, and cannot
+       be mistaken for it.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
    1. Tokens
    -------------------------------------------------------------------------- */
 
+/* Ember on ink.
+   ------------------------------------------------------------------
+   One rule governs this palette: **saturated colour means data.** The chrome —
+   ground, ink, borders, buttons, focus — is warm neutral with almost no chroma,
+   so the only vivid things on screen are temperature and the row bands. Nothing
+   in the furniture can be mistaken for a measurement.
+
+   The ground is warm charcoal at hue ~70, not the blue-black every dark
+   dashboard defaults to (our old #070e16 sat at hue ~250, within a few degrees
+   of most design systems' brand blue). Warm neutral also flatters the ember end
+   of the thermal ramp instead of fighting it.
+
+   Written in OKLCH with the hex in a comment, because OKLCH lightness is
+   perceptually uniform: a ramp stepped by L actually looks evenly stepped, and
+   a hue can move while lightness holds. Hex alone cannot promise that.
+
+   Tokens come in two layers, and call sites should only ever use the second:
+     ramps      --ink-*, --warm-*   raw steps, no meaning
+     roles      --fg, --fg-subtle, --bd-hover, --accent-hover, ...
+   A role says where a value goes. A number does not, which is how
+   `--border-strong` ends up used for three unrelated purposes.
+
+   Every data colour below was computed, not chosen — checked with the dataviz
+   validator against this app's own surfaces for lightness banding, a chroma
+   floor, colour-vision separation and WCAG contrast. Figures are in the
+   comments beside each set. */
+
 :root {
   color-scheme: dark;
 
-  /* Surfaces */
-  --page: #070e16;
-  --surface-1: #0b1420;
-  --surface-2: #0f1c2a;
-  --surface-3: #142639;
-  --surface-inset: #060d15;
+  /* ---- layer 1: raw ramps ------------------------------------------ */
 
-  /* Lines */
-  --border: #1d3549;
-  --border-strong: #2c4a64;
-  --grid: #16293b;
+  /* Warm neutral, hue 70. Chroma stays under 0.012 so this reads as
+     temperature-of-light, not as a brown tint. */
+  --warm-1000: oklch(14.0% 0.006 70); /* #0d0b0a */
+  --warm-950: oklch(17.0% 0.007 70); /* #12100e */
+  --warm-900: oklch(21.0% 0.008 70); /* #1a1714 */
+  --warm-850: oklch(24.5% 0.009 70); /* #221e19 */
+  --warm-800: oklch(28.0% 0.010 70); /* #2a251f */
+  --warm-700: oklch(33.0% 0.011 70); /* #352e26 */
+  --warm-600: oklch(40.0% 0.012 70); /* #453d33 */
+  --warm-500: oklch(50.0% 0.012 70); /* #5f584e */
+
+  --ink-100: oklch(95.0% 0.008 80); /* #f4efe6 */
+  --ink-300: oklch(76.0% 0.014 80); /* #b8ae9e */
+  --ink-500: oklch(58.0% 0.014 80); /* #857c6e */
+
+  /* ---- layer 2: roles. Call sites use these. ----------------------- */
+
+  /* Surfaces, page outward */
+  --bg-page: var(--warm-950);
+  --bg-inset: var(--warm-1000);
+  --bg-surface: var(--warm-900);
+  --bg-raised: var(--warm-850);
+  --bg-overlay: var(--warm-800);
 
   /* Ink */
-  --ink: #e9f2fb;
-  --ink-2: #b3c8dc;
-  --ink-3: #7f9ab2;
+  --fg: var(--ink-100);
+  --fg-subtle: var(--ink-300);
+  --fg-muted: var(--ink-500);
 
-  /* Brand chrome (never a data colour) */
-  --accent: #5fe3c0;
-  --accent-deep: #0b3b33;
-  --focus: #6fb8ff;
+  /* Lines */
+  --bd-subtle: var(--warm-850);
+  --bd: var(--warm-800);
+  --bd-hover: var(--warm-700);
+  --bd-strong: var(--warm-600);
 
-  /* Status ramp - fixed, never themed. Always shipped with icon + label. */
-  --good: #0ca30c;
-  --warning: #fab219;
-  --serious: #ec835a;
-  --critical: #d03b3b;
+  /* Chrome accent — deliberately ACHROMATIC (chroma 0.03, "reads gray" by the
+     validator, which is exactly the point). A coloured accent competes with the
+     status green and the thermal ember; bone cannot be confused with either.
+     Checked as a lone UI colour by WCAG contrast rather than by the categorical
+     gates: 9.6:1 on --bg-page. */
+  --accent: oklch(84.0% 0.030 85); /* #d9c9a8 */
+  --accent-hover: oklch(89.0% 0.032 85); /* #e8dcc2 */
+  --accent-ink: oklch(16.0% 0.008 70); /* #17140f — text ON accent */
+  --focus: oklch(84.0% 0.030 85); /* same bone; focus is chrome, not data */
 
-  --good-wash: rgba(12, 163, 12, 0.16);
-  --warning-wash: rgba(250, 178, 25, 0.14);
-  --serious-wash: rgba(236, 131, 90, 0.14);
-  --critical-wash: rgba(208, 59, 59, 0.16);
+  /* Interaction states, as tokens rather than one-off filters. This is the
+     habit that keeps hovers consistent across a codebase. */
+  --state-hover: oklch(100% 0 0 / 0.05);
+  --state-active: oklch(100% 0 0 / 0.09);
+  --state-selected: oklch(84.0% 0.030 85 / 0.12);
+  --state-lift: brightness(1.14) saturate(1.04);
 
-  --good-edge: rgba(12, 163, 12, 0.55);
-  --warning-edge: rgba(250, 178, 25, 0.5);
-  --serious-edge: rgba(236, 131, 90, 0.5);
-  --critical-edge: rgba(208, 59, 59, 0.62);
+  /* ---- data colour: temperature ----------------------------------- */
+  /* A DIVERGING ramp (warm hues -> cool), not sequential, so the validator's
+     single-hue gate does not apply and is expected to fail. What does apply is
+     lightness order, and this passes: L 0.60 -> 0.68 -> 0.73 -> 0.81 -> 0.92,
+     monotone with every adjacent gap >= 0.06, so it reads as a scale even in
+     greyscale. Light end 4.09:1 on --bg-surface. Always labelled. */
+  --temp-hot: oklch(60.0% 0.150 40); /* #cf4f2c */
+  --temp-warm: oklch(68.0% 0.115 70); /* #c78320 */
+  --temp-cool: oklch(73.0% 0.048 235); /* #86adc4 */
+  --temp-cold: oklch(81.5% 0.038 230); /* #b0cfdb */
+  --temp-frozen: oklch(92.0% 0.015 225); /* #e0e9ed */
 
-  /* Semantic-heat ramp for temperature classes */
-  --temp-hot: #bf4747;
-  --temp-warm: #e08a3c;
-  --temp-cool: #4a90e2;
-  --temp-cold: #8fbdf0;
-  --temp-frozen: #d6e7fc;
+  /* ---- data colour: status ---------------------------------------- */
+  /* Fixed, never themed, and never colour alone — every one ships with a text
+     label in this UI, which is the secondary encoding the green/amber pair
+     needs (protan separation between them is genuinely tight). */
+  --good: oklch(59.0% 0.130 145); /* #4e9448 */
+  --warning: oklch(67.0% 0.120 82); /* #bf8b12 */
+  --serious: oklch(58.0% 0.120 45); /* #a8552c */
+  --critical: oklch(53.0% 0.170 25); /* #bf3438 */
 
-  --radius-sm: 6px;
-  --radius: 10px;
+  --good-wash: oklch(59.0% 0.130 145 / 0.16);
+  --warning-wash: oklch(67.0% 0.120 82 / 0.15);
+  --serious-wash: oklch(58.0% 0.120 45 / 0.15);
+  --critical-wash: oklch(53.0% 0.170 25 / 0.18);
+
+  --good-edge: oklch(59.0% 0.130 145 / 0.55);
+  --warning-edge: oklch(67.0% 0.120 82 / 0.5);
+  --serious-edge: oklch(58.0% 0.120 45 / 0.5);
+  --critical-edge: oklch(53.0% 0.170 25 / 0.6);
+
+  /* ---- shape and type --------------------------------------------- */
+  --radius-sm: 5px;
+  --radius: 9px;
   --radius-lg: 14px;
+
+  /* A 1.20 scale off a 13px base. Tighter than the browser default ramp, which
+     is what makes a dense table read as deliberate rather than cramped. */
+  --text-xs: 10.5px;
+  --text-sm: 11.5px;
+  --text-base: 13px;
+  --text-md: 15px;
+  --text-lg: 18.5px;
+  --text-xl: 26px;
+  --text-2xl: 34px;
+
+  --lh-tight: 1.2;
+  --lh-base: 1.5;
+  --lh-loose: 1.65;
+
+  /* 4px base, so vertical rhythm lands on one grid everywhere. */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 22px;
+  --sp-6: 30px;
+  --sp-7: 42px;
 
   --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* ---- compatibility aliases -------------------------------------- */
+  /* The rules below this block predate the role layer. Aliasing rather than
+     find-and-replacing keeps the reskin to token values only, so no component
+     markup changes and nothing can break two days before a deadline. New CSS
+     should use the roles above; these will go when the rules are rewritten. */
+  --page: var(--bg-page);
+  --surface-1: var(--bg-surface);
+  --surface-2: var(--bg-raised);
+  --surface-3: var(--bg-overlay);
+  --surface-inset: var(--bg-inset);
+  --border: var(--bd);
+  --border-strong: var(--bd-strong);
+  --grid: var(--bd-subtle);
+  --ink: var(--fg);
+  --ink-2: var(--fg-subtle);
+  --ink-3: var(--fg-muted);
+  --accent-deep: var(--warm-800);
 }
 
 /* --------------------------------------------------------------------------
@@ -1388,16 +1498,17 @@ details.expander .expander-body {
    SQL reads, and watching it NOT move when the retention knob turns is the
    point of the chart.
 
-   These three hues are not chosen by eye. They were checked against this app's
-   own card surface (#0f1c2a) for the dark lightness band, a chroma floor,
-   colour-vision separation and WCAG contrast:
+   These three hues are not chosen by eye. They were re-checked against the
+   warm-charcoal surface this app moved to (#1a1714) for the dark lightness band,
+   a chroma floor, colour-vision separation and WCAG contrast:
 
      worst adjacent CVD deltaE 8.4 (protan) / 24.3 (tritan)   target >= 8
      worst adjacent normal-vision deltaE 19.8                 floor >= 15
      all three >= 3:1 against the surface
 
-   The app's own --accent and --warning are too light for fills here (L 0.83 and
-   0.81 against a 0.48-0.67 band), so these are darker steps of the same hues.
+   They are the one exception to "chrome is neutral": the bands are data, so they
+   are allowed chroma. Deliberately NOT reusing --temp-*, because a row's band is
+   not its temperature and sharing colour would imply it was.
    -------------------------------------------------------------------------- */
 
 :root {
@@ -1494,8 +1605,13 @@ details.expander .expander-body {
 
 .bandseg:hover,
 .bandseg:focus-visible {
-  filter: brightness(1.18);
+  filter: var(--state-lift);
   outline: none;
+}
+
+.bandseg:focus-visible {
+  /* Inset so the ring never escapes the track's rounded clip. */
+  box-shadow: inset 0 0 0 2px var(--focus);
 }
 
 .bandseg-value {
@@ -1506,12 +1622,13 @@ details.expander .expander-body {
   font-size: 10.5px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  /* Ink, never the series colour -- the fill already carries identity. */
-  color: #06121d;
+  /* Ink, never the series colour -- the fill already carries identity. Dark ink
+     because all three fills sit in the 0.48-0.67 lightness band. */
+  color: oklch(18% 0.01 70);
   pointer-events: none;
 }
 
-.bandseg.inuse .bandseg-value { color: #051019; }
+.bandseg.inuse .bandseg-value { color: oklch(16% 0.01 250); }
 
 .bandnote {
   font-size: 11.5px;

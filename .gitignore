@@ -32,3 +32,9 @@ Thumbs.db
 scratch/
 *.log
 .venv-agent/
+
+# Internal component library, vendored locally for evaluation only.
+# NOT part of this submission: it is AiDash-internal source, and origami/.npmrc
+# carries an auth token for the private verdaccio registry. Publishing either to a
+# public repo would leak company IP and a live credential.
+origami/
