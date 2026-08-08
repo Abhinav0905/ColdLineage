@@ -59,14 +59,20 @@ const FLAG_W = 96;
 /** Client-side preview threshold only. The server owns the real margin. */
 const PREVIEW_TIGHT_DAYS = 45;
 
+/* Token references, not hex. SVG `fill`/`stroke` resolve var() the same as CSS
+   does, so this chart re-skins with the rest of the app instead of drifting out
+   of step -- which is exactly what it had done: these were the pre-reskin navy
+   palette, still teal and maroon after everything else had moved on. */
 const STATE_COLOR: Record<ImpactState, string> = {
-  safe: '#0ca30c',
-  tight: '#fab219',
-  blocked: '#d03b3b',
-  unknown: '#ec835a',
+  safe: 'var(--good)',
+  tight: 'var(--warning)',
+  blocked: 'var(--critical)',
+  unknown: 'var(--serious)',
 };
 
-const CUTOFF_SAFE_COLOR = '#5fe3c0';
+/* The cutoff marker is chrome, not data -- it is where the operator put the line,
+   not a measurement -- so it wears the achromatic accent. */
+const CUTOFF_SAFE_COLOR = 'var(--accent)';
 
 export const DERIVATION_LABEL: Record<WindowDerivation, string> = {
   sql_predicate: 'parsed SQL predicate',
