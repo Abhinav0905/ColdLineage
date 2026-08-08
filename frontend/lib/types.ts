@@ -74,6 +74,21 @@ export interface Blocker {
   provenance: Provenance;
 }
 
+/** The three states a row can be in. Only `policy_held` answers to configuration;
+ *  `in_use` is fixed by what downstream SQL reads. See backend/app/services/bands.py. */
+export interface RowBands {
+  archivable: number;
+  policy_held: number;
+  in_use: number;
+  total: number;
+  evidence_bound: string | null;
+  policy_floor: string | null;
+  cutoff: string | null;
+  binding: 'evidence' | 'policy' | 'legal_hold' | 'unbounded' | 'unmeasured';
+  reason: string;
+  provenance: Provenance;
+}
+
 export interface DatasetSummary {
   id: number;
   urn: string;
@@ -95,6 +110,7 @@ export interface DatasetSummary {
   archive_state: ArchiveState;
   archived_through: string | null;
   signals_live: boolean;
+  bands: RowBands | null;
 }
 
 // ---------------------------------------------------------------------------

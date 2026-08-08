@@ -1379,3 +1379,202 @@ details.expander .expander-body {
     animation: none !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Row bands — where a table's rows actually sit
+   --------------------------------------------------------------------------
+   Three states per table: archivable, held by policy, in use. Only the middle
+   band answers to configuration; the right-hand band is fixed by what consumer
+   SQL reads, and watching it NOT move when the retention knob turns is the
+   point of the chart.
+
+   These three hues are not chosen by eye. They were checked against this app's
+   own card surface (#0f1c2a) for the dark lightness band, a chroma floor,
+   colour-vision separation and WCAG contrast:
+
+     worst adjacent CVD deltaE 8.4 (protan) / 24.3 (tritan)   target >= 8
+     worst adjacent normal-vision deltaE 19.8                 floor >= 15
+     all three >= 3:1 against the surface
+
+   The app's own --accent and --warning are too light for fills here (L 0.83 and
+   0.81 against a 0.48-0.67 band), so these are darker steps of the same hues.
+   -------------------------------------------------------------------------- */
+
+:root {
+  --band-archivable: #199e70;
+  --band-policy: #c98500;
+  --band-inuse: #3987e5;
+}
+
+.bandchart {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bandrow {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) 1fr;
+  align-items: center;
+  gap: 14px;
+}
+
+.bandrow-label {
+  min-width: 0;
+}
+
+.bandrow-name {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bandrow-meta {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bandrow-meta .mono {
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+/* The track is the widest table's row count, so bar length reads as data volume
+   and the bars are comparable to each other. */
+.bandtrack {
+  position: relative;
+  height: 26px;
+  background: var(--surface-inset);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.bandbar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  /* 2px of surface between fills, per the mark spec -- the gap is what keeps
+     adjacent segments legible for colour-vision-deficient readers. */
+  gap: 2px;
+  padding: 0;
+}
+
+.bandseg {
+  position: relative;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  cursor: default;
+  transition: filter 120ms ease;
+}
+
+.bandseg:first-child {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.bandseg:last-child {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.bandseg:only-child {
+  border-radius: var(--radius-sm);
+}
+
+.bandseg.archivable { background: var(--band-archivable); }
+.bandseg.policy     { background: var(--band-policy); }
+.bandseg.inuse      { background: var(--band-inuse); }
+
+.bandseg:hover,
+.bandseg:focus-visible {
+  filter: brightness(1.18);
+  outline: none;
+}
+
+.bandseg-value {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  /* Ink, never the series colour -- the fill already carries identity. */
+  color: #06121d;
+  pointer-events: none;
+}
+
+.bandseg.inuse .bandseg-value { color: #051019; }
+
+.bandnote {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  margin-top: 3px;
+}
+
+.bandnote .mono { color: var(--ink-2); }
+
+.bandlegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.bandlegend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.bandlegend-swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+/* Floating tooltip, per the interaction spec: a bar chart gets a per-mark hover. */
+.bandtip {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  max-width: 320px;
+  padding: 9px 11px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.bandtip-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.bandtip-rows {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.bandtip-why {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border);
+  color: var(--ink-3);
+}

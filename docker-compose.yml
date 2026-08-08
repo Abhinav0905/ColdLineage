@@ -68,8 +68,17 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000/api
       NEXT_TELEMETRY_DISABLED: "1"
+      # Docker's bind mounts on macOS and Windows do not deliver inotify events,
+      # so Next's watcher sees nothing and silently serves the built-in copy.
+      WATCHPACK_POLLING: "true"
     ports: ["${UI_PORT:-3000}:3000"]
     depends_on: [backend]
+    # Source only, the same selective style as the backend above. Mounting the
+    # whole directory would shadow the image's node_modules and .next.
+    volumes:
+      - "./frontend/app:/app/app"
+      - "./frontend/components:/app/components"
+      - "./frontend/lib:/app/lib"
 
 volumes:
   pgdata:

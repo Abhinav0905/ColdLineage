@@ -37,11 +37,17 @@ ARCHIVE_CONSIDERATION_CEILING = 45.0
 class EvidenceService:
     @staticmethod
     def retention_floor(context: DatasetContext, now: date | None = None) -> date | None:
-        """The oldest cutoff policy permits. Rows on or after this must stay hot."""
+        """The oldest cutoff policy permits. Rows on or after this must stay hot.
+
+        Resolved in months, not years. `int(retention_years)` silently truncated
+        every fractional setting -- 1.5 years became 1, and four months (0.33)
+        became zero, which quietly removed the floor altogether. The property is
+        documented as accepting fractions, so it has to honour them.
+        """
         if context.retention_years is None:
             return None
         now = now or date.today()
-        return now - relativedelta(years=int(context.retention_years))
+        return now - relativedelta(months=round(float(context.retention_years) * 12))
 
     @staticmethod
     def build(context: DatasetContext, now: datetime | None = None) -> DatasetAssessment:

@@ -27,6 +27,7 @@ from app.datahub.frozen import (
 from app.domain.models import ArchiveManifest, DatasetAssessment, Recommendation
 from app.models.db import ArchivePlanRecord, ArchiveRun, AuditEvent, DatasetRegistry
 from app.services.archive import ArchiveError, ArchiveService, VerificationFailed
+from app.services.bands import RowBands, compute as compute_bands
 from app.services.context import ContextService
 from app.services.evidence import EvidenceService
 from app.services.plan import PlanService, compute_plan_hash
@@ -106,7 +107,13 @@ def _archive_state(db: Session, urn: str) -> tuple[str, str | None]:
     return "PARTIALLY_ARCHIVED", run.cutoff_date.isoformat()
 
 
-def _summary(assessment: DatasetAssessment, dataset_id: int, state: str, archived_through: str | None) -> dict:
+def _summary(
+    assessment: DatasetAssessment,
+    dataset_id: int,
+    state: str,
+    archived_through: str | None,
+    bands: RowBands | None = None,
+) -> dict:
     ctx = assessment.context
     span_min = ctx.min_date.isoformat() if ctx.min_date else None
     span_max = ctx.max_date.isoformat() if ctx.max_date else None
@@ -131,6 +138,9 @@ def _summary(assessment: DatasetAssessment, dataset_id: int, state: str, archive
         "archive_state": state,
         "archived_through": archived_through,
         "signals_live": ctx.policy_provenance.source.value.startswith("datahub"),
+        # The three-band split. Only the middle band answers to configuration; see
+        # services/bands.py. None when it could not be measured at all.
+        "bands": bands.as_dict() if bands else None,
     }
 
 
@@ -198,7 +208,13 @@ async def datasets(db: Session = Depends(get_db)):
             logger.warning("assessment failed for %s: %s", urn, exc)
             continue
         state, through = _archive_state(db, urn)
-        out.append(_summary(assessment, ids[urn], state, through))
+        try:
+            bands = compute_bands(db, assessment.context)
+        except Exception as exc:  # noqa: BLE001 - a chart must never blank the estate
+            logger.warning("band computation failed for %s: %s", urn, exc)
+            db.rollback()
+            bands = None
+        out.append(_summary(assessment, ids[urn], state, through, bands))
 
     out.sort(key=lambda d: d["temperature"]["score"])
     return out

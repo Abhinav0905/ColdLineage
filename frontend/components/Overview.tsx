@@ -13,6 +13,7 @@ import {
   TemperatureMeter,
   TemperaturePill,
 } from '@/components/Primitives';
+import RowBandChart from '@/components/RowBandChart';
 import { api } from '@/lib/api';
 import { EMPTY, exactBytes, formatBytes, formatCount } from '@/lib/format';
 import type { ArchiveState, DatasetSummary } from '@/lib/types';
@@ -138,6 +139,8 @@ export default function Overview() {
               </div>
             </div>
           </div>
+
+          <RowBandChart datasets={rows} />
 
           <div className="section">
             <div className="section-head">
