@@ -352,14 +352,50 @@ class ArchiveService:
     @staticmethod
     def _resync_identity(db: Session, context: DatasetContext) -> None:
         """Appending rows that carry their original ids leaves the sequence behind them,
-        so the next natural INSERT raises a duplicate-key error. Fast-forward it."""
+        so the next natural INSERT raises a duplicate-key error. Fast-forward it.
+
+        Two things here are load-bearing, both learned the hard way.
+
+        This used to assume the column was called `id` and swallow the resulting
+        error. On a table whose key is `encounter_id`, that raised UndefinedColumn --
+        and **a failed statement aborts the entire Postgres transaction**, so the
+        caller's `db.commit()` silently degraded into a rollback. Restore reported
+        `verified: true, rows: 666839` and put back nothing. A restore that lies about
+        success is the single worst failure this system could have.
+
+        So: discover the sequence-backed column from the catalog rather than guessing,
+        and do the whole thing inside a SAVEPOINT, so that any surprise in here can
+        never reach the rows we just appended.
+        """
+        cleaned = context.qualified_table.replace('"', "")
+        schema, _, table = cleaned.rpartition(".")
+        schema = schema or "public"
+
         try:
-            db.execute(
-                text(
-                    "SELECT setval(pg_get_serial_sequence(:tbl, 'id'), "
-                    "COALESCE((SELECT max(id) FROM " + context.qualified_table + "), 1), true)"
-                ),
-                {"tbl": context.name},
-            )
-        except Exception as exc:  # noqa: BLE001 - table may have no serial id column
-            logger.info("identity resync skipped for %s: %s", context.name, exc)
+            with db.begin_nested():
+                row = db.execute(
+                    text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_schema = :s AND table_name = :t "
+                        "AND (column_default LIKE 'nextval(%' OR is_identity = 'YES') "
+                        "ORDER BY ordinal_position LIMIT 1"
+                    ),
+                    {"s": schema, "t": table},
+                ).fetchone()
+                if row is None:
+                    logger.info(
+                        "no sequence-backed column on %s; nothing to resync", context.name
+                    )
+                    return
+                column = row[0]
+                db.execute(
+                    text(
+                        "SELECT setval(pg_get_serial_sequence(:tbl, :col), "
+                        f'COALESCE((SELECT max("{column}") FROM {context.qualified_table}), 1), true)'
+                    ),
+                    {"tbl": f"{schema}.{table}", "col": column},
+                )
+                logger.info("identity sequence resynced on %s.%s", context.name, column)
+        except Exception as exc:  # noqa: BLE001
+            # The savepoint already rolled this back; the appended rows are untouched.
+            logger.warning("identity resync failed for %s (rows are safe): %s", context.name, exc)

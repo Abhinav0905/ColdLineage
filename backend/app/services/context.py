@@ -23,6 +23,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.datahub.client import DataHubClient, DataHubError
+from app.datahub.frozen import is_own_archive
 from app.domain.models import (
     ConsumerWindow,
     DatasetContext,
@@ -170,6 +171,24 @@ class ContextService:
         for node in downstream:
             urn = node.get("urn") or ""
             ctype = str(node.get("type") or "UNKNOWN")
+
+            if is_own_archive(urn):
+                # An archive OF this table is not a CONSUMER of it.
+                #
+                # Registering the frozen copy in the catalog (see datahub/frozen.py)
+                # draws COPY lineage from the archive back to its source, which makes
+                # the archive appear downstream of the table it came from. It has no
+                # recorded SQL, so the fail-closed rule reads it as unbounded -- and
+                # the very act of cataloguing one archive would block every future
+                # cutoff on that table. The system would archive exactly once and
+                # then refuse forever, for a reason no operator could diagnose.
+                #
+                # Skipped here rather than at write time because the lineage edge is
+                # genuinely correct and worth having; it is only *this* traversal that
+                # must not treat it as a reader.
+                logger.debug("skipping own archive %s in consumer analysis", urn)
+                continue
+
             matched = by_consumer.get(urn, [])
 
             if not matched:

@@ -17,7 +17,13 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.db import get_db
-from app.datahub.client import DataHubClient, DataHubError
+from app.datahub.client import DataHubClient, DataHubError, WritebackOperation
+from app.datahub.frozen import (
+    FrozenCopyRegistrar,
+    read_foreign_keys,
+    read_source_columns,
+    resolve_relationship_targets,
+)
 from app.domain.models import ArchiveManifest, DatasetAssessment, Recommendation
 from app.models.db import ArchivePlanRecord, ArchiveRun, AuditEvent, DatasetRegistry
 from app.services.archive import ArchiveError, ArchiveService, VerificationFailed
@@ -409,6 +415,27 @@ async def execute(body: ExecuteBody, db: Session = Depends(get_db)):
         manifest_uri=manifest.manifest_uri,
         rows=manifest.rows,
     )
+    # The archive is now a governed asset in its own right -- it has PHI, a schema
+    # and a retention obligation -- so it gets its own catalog entity rather than
+    # existing only as a note on the source. Never allowed to fail the archive:
+    # the bytes are already safe and verified, and a missing catalog record is a
+    # far smaller problem than an exception unwinding a completed move.
+    try:
+        frozen_ops = await FrozenCopyRegistrar().register(
+            manifest=manifest,
+            context=context,
+            columns=read_source_columns(db, context.qualified_table),
+            er_relationships=resolve_relationship_targets(
+                read_foreign_keys(db, context.qualified_table),
+                platform=context.platform,
+                database=settings.warehouse_database,
+            ),
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("frozen copy registration failed: %s", exc)
+        frozen_ops = [WritebackOperation("registerFrozenCopy", urn, "failed", str(exc)[:300])]
+
+    writeback.operations.extend(frozen_ops)
     run.datahub_writeback = writeback.as_dict()
     record.status = "EXECUTED"
     db.commit()

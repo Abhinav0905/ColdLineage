@@ -23,13 +23,25 @@
   qualified_name: io.coldlineage.policy.retentionYears
   type: number
   cardinality: SINGLE
-  display_name: Retention Floor (years)
+  display_name: Minimum Age Before Cold (years)
   entity_types:
     - dataset
   description: >-
-    Minimum number of years of history that must remain queryable in the hot tier
-    for this dataset, per data-retention policy. ColdLineage refuses any cutoff that
-    would breach this floor, independent of how cold the data looks.
+    How much recent history must stay in the hot tier, in years. Equivalently: data
+    must be at least this old before it may be archived at all. Fractional values are
+    honoured, so 1.5 means eighteen months.
+
+    This is the POLICY gate, and it is independent of the EVIDENCE gate. ColdLineage
+    only archives a range that passes both: no downstream consumer can still reach
+    into it (proved by parsing their SQL), AND it is older than this floor. Evidence
+    alone would happily archive last month's data if nobody had queried it yet; this
+    floor is what forbids that. Breach it and the cutoff is refused with
+    RETENTION_FLOOR, naming the overshoot in days, no matter how cold the data looks.
+
+    Set it to a regulatory retention period only if that period must be served from
+    the primary store. Where verified, restorable cold storage satisfies the
+    obligation, set the business rule instead -- the archive keeps a SHA-256 checked
+    on retrieval and a tested restore path precisely so that argument can be made.
 
 - id: io.coldlineage.policy.legalHold
   qualified_name: io.coldlineage.policy.legalHold

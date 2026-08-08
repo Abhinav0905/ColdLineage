@@ -59,5 +59,15 @@ class Settings(BaseSettings):
     def datahub_is_live(self) -> bool:
         return self.datahub_mode == "live"
 
+    @property
+    def warehouse_database(self) -> str:
+        """The database name, as it appears inside a dataset URN.
+
+        Derived from database_url rather than configured separately, so the URNs
+        this service writes cannot drift from the database it actually reads.
+        """
+        tail = self.database_url.rsplit("/", 1)[-1]
+        return tail.split("?", 1)[0] or "coldlineage"
+
 
 settings = Settings()
