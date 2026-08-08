@@ -91,16 +91,27 @@ def evidence_bound(context: DatasetContext) -> tuple[date | None, str | None]:
     """The earliest date any downstream consumer can still reach.
 
     Returns (bound, blocking_reason). A bound of None with a reason means the
-    table cannot be split at all -- some consumer reads without a date bound, so
+    table cannot be split at all -- some consumer's reach could not be proven, so
     no row is provably unread.
+
+    The test is `earliest_date_read is None`, deliberately NOT `is_unbounded`.
+    Those two disagree: `is_unbounded` is True only for NO_DATE_FILTER and
+    NO_QUERIES_OBSERVED, while `SimulationService._state_for` treats *every*
+    unresolved window as UNKNOWN and therefore blocking -- including
+    NOT_A_QUERY_CONSUMER and "predicate present but unresolvable".
+
+    Using `is_unbounded` here would let this chart paint rows green that
+    /simulate would refuse, which is the disagreement that matters: the picture
+    would be wrong in the unsafe direction. Whatever blocks a cutoff must also
+    keep rows out of the archivable band.
     """
-    unbounded = [w for w in context.downstream if w.is_unbounded]
-    if unbounded:
-        names = ", ".join(w.consumer_name for w in unbounded[:3])
-        more = f" and {len(unbounded) - 3} more" if len(unbounded) > 3 else ""
+    unproven = [w for w in context.downstream if w.earliest_date_read is None]
+    if unproven:
+        names = ", ".join(w.consumer_name for w in unproven[:3])
+        more = f" and {len(unproven) - 3} more" if len(unproven) > 3 else ""
         return None, (
-            f"{len(unbounded)} consumer(s) read this table with no date bound "
-            f"({names}{more}), so no row can be shown to be unread."
+            f"{len(unproven)} consumer(s) cannot be shown to stop reading at any date "
+            f"({names}{more}), so no row can be proven unread."
         )
 
     bounded = [w for w in context.downstream if w.earliest_date_read]
@@ -132,13 +143,6 @@ def compute(
     floor = EvidenceService.retention_floor(context, now)
 
     # -- the fail-closed gates, cheapest first ----------------------------
-    if context.legal_hold:
-        matter = context.legal_hold_matter or "unspecified matter"
-        return _all_in_use(
-            total, f"An active legal hold ({matter}) forbids moving any row.", "legal_hold",
-            policy, policy_floor=floor,
-        )
-
     if not context.date_column:
         return _all_in_use(
             total,
@@ -161,36 +165,70 @@ def compute(
                            policy_floor=floor)
 
     # -- boundaries --------------------------------------------------------
-    # cutoff = the latest date it is safe AND permitted to archive before.
+    #
+    # Two dates decide everything, and either may legitimately be absent:
+    #
+    #   archive_before  the latest date it is both safe and permitted to archive
+    #                   before. None means nothing may move at all.
+    #   read_from       the earliest date a consumer can still reach. None means
+    #                   nobody reads this table, so no row is "in use".
+    #
+    # Counting only those two edges and deriving the middle by subtraction means
+    # the three bands cannot fail to sum to the total. Three independent FILTER
+    # clauses can disagree at a boundary; a subtraction cannot.
     candidates = [d for d in (bound, floor) if d is not None]
-    cutoff = min(candidates) if candidates else None
-    if cutoff is None:
+    archive_before = min(candidates) if candidates else None
+    read_from = bound
+    hold_matter: str | None = None
+
+    if context.legal_hold:
+        # A legal hold stops the archive dead -- but it does NOT mean a consumer
+        # is reading those rows. Reporting them as "in use" would put a false
+        # statement on the chart, so they stay in the held band where they belong,
+        # and the reason says which kind of hold it is.
+        hold_matter = context.legal_hold_matter or "unspecified matter"
+        archive_before = None
+
+    if archive_before is None and read_from is None and not context.legal_hold:
         return _all_in_use(
             total,
             "Neither a consumer bound nor a retention floor is known, so nothing is proven safe.",
             "unmeasured", policy, policy_floor=floor,
         )
 
-    binding = "evidence" if (bound is not None and cutoff == bound) else "policy"
+    binding = (
+        "legal_hold"
+        if context.legal_hold
+        else "evidence"
+        if (bound is not None and archive_before == bound)
+        else "policy"
+    )
 
-    # -- count, in one pass ------------------------------------------------
+    # -- count the two edges -----------------------------------------------
     column, table = context.date_column, context.qualified_table
     try:
-        row = db.execute(
-            text(
-                f'SELECT count(*) FILTER (WHERE "{column}" < :cutoff) AS archivable, '
-                f'count(*) FILTER (WHERE "{column}" >= :cutoff'
-                + (f' AND "{column}" < :bound' if bound is not None else " AND false")
-                + ") AS policy_held, "
-                + (
-                    f'count(*) FILTER (WHERE "{column}" >= :bound) AS in_use'
-                    if bound is not None
-                    else f'count(*) FILTER (WHERE "{column}" >= :cutoff) AS in_use'
-                )
-                + f" FROM {table}"
-            ),
-            {"cutoff": cutoff, "bound": bound} if bound is not None else {"cutoff": cutoff},
-        ).one()
+        archivable = (
+            int(
+                db.execute(
+                    text(f'SELECT count(*) FROM {table} WHERE "{column}" < :d'),
+                    {"d": archive_before},
+                ).scalar()
+                or 0
+            )
+            if archive_before is not None
+            else 0
+        )
+        in_use = (
+            int(
+                db.execute(
+                    text(f'SELECT count(*) FROM {table} WHERE "{column}" >= :d'),
+                    {"d": read_from},
+                ).scalar()
+                or 0
+            )
+            if read_from is not None
+            else 0
+        )
     except Exception as exc:  # noqa: BLE001
         db.rollback()
         logger.warning("band count failed for %s: %s", context.name, exc)
@@ -199,12 +237,17 @@ def compute(
             evidence_bound=bound, policy_floor=floor,
         )
 
-    archivable, policy_held, in_use = int(row[0]), int(row[1]), int(row[2])
+    policy_held = max(0, total - archivable - in_use)
 
-    if bound is None:
+    if hold_matter:
         reason = (
-            f"No consumer reads this table, so the retention floor of "
-            f"{floor.isoformat() if floor else 'n/a'} alone decides the cutoff."
+            f"An active legal hold ({hold_matter}) forbids moving any row, whatever the "
+            f"retention setting says. These rows are not being read -- they are frozen."
+        )
+    elif bound is None:
+        reason = (
+            f"No consumer reads this table at all, so the retention floor of "
+            f"{floor.isoformat() if floor else 'n/a'} alone decides what may move."
         )
     elif binding == "evidence":
         reason = (
@@ -218,6 +261,7 @@ def compute(
             f"policy is what holds the middle band, not the consumers."
         )
 
+    cutoff = archive_before
     return RowBands(
         archivable=archivable,
         policy_held=policy_held,
