@@ -1,165 +1,219 @@
 # Demo video script — 170 seconds
 
-Hard limit is 3:00; judges are not required to watch past it. Target 2:50.
-Must be public on YouTube/Vimeo — **test it in an incognito window before submitting.**
+Hard limit is 3:00 and judges are not required to watch past it. Target **2:50**.
+Must be public on YouTube/Vimeo — **test the link in an incognito window before submitting.**
+
+The spine of this cut is one idea, shown three times in three different ways:
+
+> **Configuration is a floor, not a permission slip.** What makes an archive safe is
+> evidence about what downstream consumers actually read — and no setting can move it.
+
+Anybody can demo a config knob. Almost nobody can demo a system that *refuses to obey a
+loosened config* because it holds independent proof. That contrast is the whole video.
+
+---
 
 ## Before you hit record
 
 ```bash
-# 1. Everything up and warm
-datahub docker quickstart                       # or: already running
-make demo                                       # seeds + ingests + starts the stack
-make examples                                   # confirms the whole path works end to end
+# 1. Stack up. DataHub needs ~8 GB given to Docker or GMS dies waiting on search.
+docker compose up -d
+docker start datahub-opensearch-1 datahub-kafka-broker-1 && sleep 45
+docker start datahub-datahub-gms-quickstart-1 datahub-frontend-quickstart-1
 
-# 2. Reset to a clean pre-archive state so the execute step is live on camera
-docker exec coldlineage-datahub-hackathon-10thaug-postgres-1 \
-  psql -U coldlineage -d coldlineage -c \
-  "TRUNCATE archive_runs, archive_plans, audit_events RESTART IDENTITY;"
-.venv/bin/python scripts/seed_warehouse.py
+# 2. The estate must be WHOLE: 1,100,000 rows spanning 2019-01-01 -> 2026-08-05.
+docker exec coldlineage-datahub-hackathon-10thaug-postgres-1 psql -U coldlineage \
+  -d coldlineage -tAc \
+  "SELECT count(*), min(event_date), max(event_date) FROM public.patient_encounters;"
+#    If it is short, restore the unrestored run rather than reseeding:
+#    curl -s http://localhost:8000/api/runs | python3 -m json.tool | grep -A3 restored_at
+#    curl -s -X POST http://localhost:8000/api/restore -H 'Content-Type: application/json' \
+#         -d '{"run_id":<N>,"temporary":false}'
+
+# 3. Start Act 1 with retention wide open.
+.venv/bin/python scripts/set_policy.py patient_encounters --years 14
+
+# 4. Confirm the agent's key works, so you are not discovering a 429 on camera.
+set -a && . ./.env && set +a
+.venv-agent/bin/python -c "import os;print('key set:', bool(os.environ.get('OPENAI_API_KEY')))"
 ```
 
-Open four tabs in this order so you never fumble:
-1. ColdLineage Overview — http://localhost:3100
-2. ColdLineage Candidates — http://localhost:3100/candidates?dataset=5
-3. DataHub entity — http://localhost:9002 → search `patient_encounters`
-4. A terminal, font size up, in the repo root
+Open these tabs, in this order, so you never fumble:
 
-Record at **1920×1080**. The Candidates page is dense — zoom the browser to ~90% so the timeline
-and the consumer table both fit without horizontal scroll.
+1. **Overview** — http://localhost:3100
+2. **Candidates** — http://localhost:3100/candidates?dataset=5
+3. **DataHub entity** — http://localhost:9002 → search `patient_encounters`
+4. **Terminal**, font size up, in the repo root
 
----
+Record at **1920×1080**, browser at ~90% zoom so the band chart and the estate table both fit
+without horizontal scroll.
 
-## 0:00–0:18 — The claim
-
-> "DataHub can tell you a table is cold. It cannot tell you that **half** a table is cold — and it
-> cannot move a single byte. ColdLineage does both, and writes the receipt back into DataHub."
-
-**On screen:** Overview page. Let the estate table land. Do not narrate the tiles.
+> **The one thing that will bite you.** A structured-property write is not readable the instant
+> the mutation returns — it travels through DataHub's change log first. `set_policy.py` polls
+> until the new value is visible, but **still leave a beat before you hit Refresh.** If you
+> refresh too fast you will show the old numbers and it will look like nothing happened.
 
 ---
 
-## 0:18–0:42 — The two rows that are the whole argument
+## 0:00–0:15 — The claim
 
-Point at `patient_encounters`: **HOT, 81.2** — and the archive-eligible badge.
+**On screen:** Overview. Let it land. Say nothing about the KPI tiles.
 
-> "This table is genuinely in active use. Sixty-six queries in the last thirty days. And yet
-> forty-seven percent of it is provably unread — because its first four years are cold even though
-> the table isn't."
-
-Point at `lab_results`: **zero queries, zero users** — and the red `UNBOUNDED_CONSUMER` chip.
-
-> "This one has had no queries at all in thirty days. Every dataset-level tiering tool archives it.
-> It's blocked — and in a moment I'll show you why."
-
-> "Dataset-level temperature gets both of these wrong. That's the gap."
+> "DataHub can tell you a table is cold. It cannot tell you that **half** a table is cold — and
+> it cannot move a single byte. ColdLineage does both, and writes the receipt back into DataHub."
 
 ---
 
-## 0:42–1:05 — Where the context comes from
+## 0:15–0:45 — Where the rows actually sit
 
-**Cut to terminal.** Make `DATAHUB_GMS_URL` visible on screen.
+**On screen:** the band chart. Cursor moving slowly along one bar at a time.
+
+> "Every table's rows split three ways. Green is archivable. Amber is provably unread but held
+> by retention policy. Blue is rows a consumer can still reach."
+
+Point at `patient_encounters` — **1.1 million rows, and it scores HOT, 81.**
+
+> "This table is genuinely busy. And yet sixty percent of it is provably unread, because its
+> first four years are cold even though the table isn't."
+
+Point at `lab_results` — the bar that is **entirely blue**.
+
+> "This one had zero queries and zero users in thirty days. Every dataset-level tiering tool on
+> the market archives it. Here it's a solid wall of *in use* — and in a moment the agent will
+> tell you why."
+
+---
+
+## 0:45–1:25 — The knob, and the wall it hits
+
+**On screen:** terminal beside the browser. Run each command, leave a beat, hit Refresh.
 
 ```bash
-curl -s localhost:8000/api/health | jq .datahub
+.venv/bin/python scripts/set_policy.py patient_encounters --years 4
 ```
 
-> "Nothing here is seeded. Lineage, usage, retention policy, legal hold — all read from a live
-> DataHub at request time."
+> "Retention was fourteen years, so nothing could move. I'll set it to four."
+
+*(bar splits three ways: 42% green, 19% amber, 39% blue)*
+
+> "Now some of it is archivable, some is still held by policy, and thirty-nine percent is in use."
 
 ```bash
-curl -s localhost:8000/api/datasets/5 | jq '.context.downstream[] | {consumer_name, earliest_date_read, derivation}'
+.venv/bin/python scripts/set_policy.py patient_encounters --years 2
 ```
 
-> "Seven downstream consumers. For each one, DataHub holds the actual SQL it runs. We parse it with
-> sqlglot and resolve how far back it really reads."
+> "Two years. The amber band disappears — everything policy was holding is now free to move."
+
+```bash
+.venv/bin/python scripts/set_policy.py patient_encounters --months 4
+```
+
+**Beat. Let the refresh land. Let the viewer see that nothing changed.**
+
+> "Four months. And *nothing happens*. Sixty percent archivable, thirty-nine percent still in
+> use — the same four hundred and thirty-three thousand rows as when retention was fourteen
+> years. Because past a point the limit stops being policy and starts being this:"
+
+**Switch to Candidates tab**, point at the extracted predicate:
+
+```sql
+WHERE e.event_date BETWEEN DATE '2024-01-01' AND CURRENT_DATE
+```
+
+> "A compliance dashboard reads from January 2024. ColdLineage got that by pulling the query's
+> real SQL out of DataHub and parsing it. **The config is a floor, not a permission slip.**"
 
 ---
 
-## 1:05–1:35 — The hero moment. Do not rush this.
+## 1:25–1:55 — The agent says no
 
-**Cut to Candidates.** The Range Safety Timeline is on screen with seven consumer bars.
+**On screen:** terminal, full width.
 
-> "Each bar is the history one consumer still reads, derived from its real query — a `BETWEEN`, a
-> ninety-day interval, a `date_trunc`. Now watch the cutoff."
+```bash
+.venv-agent/bin/python agent/coldlineage_agent.py \
+  "lab_results looks cold. Can we archive it?"
+```
 
-**Drag the cutoff slowly left to right.** Stop at three points:
+> "There's an agent on top of this. It reads DataHub through the official MCP Server and acts
+> through six constrained operations. It holds no database credentials and cannot issue SQL."
 
-| Stop | What to say |
-|---|---|
-| ~2022 | "Two years of clearance. Safe." |
-| ~2023-11 | "Now it's tight — forty-seven days from what the compliance dashboard reads." |
-| ~2024-03 | *(let the bar go red first, then speak)* "And there it refuses. The cutoff has crossed into data the Quarterly Compliance Dashboard still reads. Sixty days inside its window." |
+Let the tool calls scroll — `coldlineage_list_datasets`, then `search` via MCP, then
+`coldlineage_assess_dataset`, then `coldlineage_simulate_cutoff`.
 
-> "The date picker isn't decoration. The server recomputes the verdict against every consumer's real
-> query window on every change."
+> "It checks the estate, cross-checks the catalog over MCP, and tests a cutoff."
 
----
+When the answer lands, read the first line off the screen:
 
-## 1:35–1:52 — The killer case
+> "**No — lab_results cannot currently be archived safely.** Zero rows of seven hundred thousand.
+> One HIPAA disclosure extract reads the table with no date bound, so not one row can be *proved*
+> unread. It's the coldest table in the estate and the agent still says no — and it tells you what
+> would have to change for the answer to be yes."
 
-**Switch the dataset picker to `lab_results`.** Point at the hatched full-width bar.
-
-> "Here's why the quiet table was blocked. This HIPAA disclosure extract runs
-> `WHERE performing_lab IS NOT NULL`. It **has** a filter — so a 'does this query filter?' check
-> passes it. But there's no date bound, so it reads every row ever written. No cutoff is safe, and
-> only looking at the actual SQL catches that."
+*(If you have both keys: `--provider anthropic` runs the identical prompt and tool set on Claude.
+Worth one sentence — the guardrail is the tool list, so the model is the swappable part.)*
 
 ---
 
-## 1:52–2:22 — Execute, with the verification called out
+## 1:55–2:30 — Move the bytes, and prove it
 
-**Back to `patient_encounters`, cutoff 2023-01-01.** Build plan → point at the plan hash.
+**On screen:** Candidates tab, `patient_encounters`, cutoff `2024-01-01`. Click through
+Simulate → Plan → Execute. Approve when it asks.
 
-> "Approval is bound to a plan hash — dataset, cutoff, row count, verdict. If anything drifts, the
-> execute is refused instead of running against different data."
+> "Plan, then execute. Approval is a **plan hash** binding dataset, cutoff, row count and
+> verdict — if live state moved since the plan was shown, execution is refused rather than run
+> against different data."
 
-Click **Approve & execute**. When the result lands, point at the verification block.
+While it runs:
 
-> "Five hundred sixteen thousand rows, eleven Parquet parts. Then it **downloads the object back**
-> from storage and recomputes the checksum on the retrieved bytes — because hashing what you're
-> about to upload proves nothing about what landed. Only after that passes does it delete."
+> "It streams the range out to Parquet, uploads it, then **downloads it back and recomputes the
+> SHA-256 on the retrieved bytes**, re-reads the Parquet and asserts the row count and schema.
+> Only then does it delete, in one transaction. Hashing the buffer you were about to upload
+> proves nothing about what landed."
 
-Show the row count drop: 1,100,000 → 583,912.
+**Switch to the DataHub tab. Reload the entity.**
 
----
+> "And here's the receipt, back in DataHub: six typed archive properties, a deprecation note
+> carrying the cutoff and the restore path, a link to the manifest, and a searchable tag."
 
-## 2:22–2:45 — The receipt lands in DataHub
+Search DataHub for `cold-tier-frozen-copy`:
 
-**Cut to the DataHub entity page.** Refresh.
-
-> "And the context goes back where the next reader will find it."
-
-Point at each, briefly:
-- the **deprecation banner** carrying the cutoff and the restore path
-- the **`cold-tier-archived`** tag
-- the **structured properties** — scroll so both groups are visible
-
-> "Note what's here: the policy values we **read** — retention, legal hold — sitting next to the
-> archive values we **wrote**. We patch typed structured properties, we never overwrite
-> `datasetProperties`, so nobody else's metadata gets clobbered."
-
-> "So the next agent that queries this table knows an unqualified scan won't return the full
-> history, and knows exactly how to get it back."
+> "The archive is also its own catalog entity now — same schema, with lineage back to the table
+> it came from. So the next person who opens either one inherits the whole story."
 
 ---
 
-## 2:45–2:55 — Close
+## 2:30–2:50 — Give it back, and close
 
-**Restore tab.** Click restore. Let "checksum verified" appear.
+```bash
+curl -s -X POST http://localhost:8000/api/restore \
+  -H 'Content-Type: application/json' -d '{"run_id":1,"temporary":false}'
+```
 
-> "Reversible at the data layer, not just the metadata layer. That's ColdLineage."
+> "And it's reversible. Checksum verified against the manifest on the way back, or it refuses to
+> restore at all."
+
+**Back to Overview, refresh, bars whole again.**
+
+> "Honest about scale: at demo size the saving is about a cent a month, and we report the measured
+> figure rather than inflating it. What transfers is the fraction — **sixty percent of a live
+> table was provably unread** — and the fact that nothing moved until the evidence said it could."
 
 ---
 
-## Things to avoid on camera
+## If you overrun
 
-- **Don't show the dollar figure.** At demo scale it's about a cent a month and it undercuts you.
-  Lead with rows and the 46.9% fraction — that's the number that transfers.
-- Don't claim the estate is real. It's synthetic and every entity is stamped
-  `coldlineage.synthetic=true`. Saying so costs three seconds and buys credibility.
-- Don't say "agentic" without showing the Skill. If you want to claim the agent, spend five seconds
-  on `skills/assess-data-temperature/SKILL.md` instead of using the word.
-- Don't let a loading spinner sit on screen. `/api/datasets` takes ~0.4s; give it a beat before
-  you start talking.
-- Don't demo restore of the full 516k rows live — it takes ~75 seconds. Either cut away, or restore
-  a smaller run.
+Cut in this order. Never cut the 0:45–1:25 block; it is the video.
+
+1. The `cold-tier-frozen-copy` search (2:20–2:30) — it's in `examples/` anyway.
+2. The restore (2:30–2:40) — say "and it's reversible, checksum-verified" over the Overview.
+3. The `--provider anthropic` aside.
+4. The narration over execute — let the progress speak and just say "verified before delete".
+
+## Do not say
+
+- **"Saves you money at scale."** You measured a cent a month. Say the fraction, not the dollars.
+- **"AI decides what to archive."** The model proposes and explains; sqlglot derives the bound;
+  a human approves; the executor verifies. Claiming otherwise invites the obvious objection.
+- **"Replaces DataHub's tiering."** It doesn't. Metadata Tests already find cold tables. What is
+  new is sub-table date ranges and touching the data plane at all.
+- **"Fully automated."** The human gate is a feature. Say so.

@@ -342,7 +342,34 @@ async def execute(body: ExecuteBody, db: Session = Depends(get_db)):
     if record is None:
         raise HTTPException(404, {"message": "unknown plan hash; issue a plan first via POST /api/datasets/{id}/plan"})
     if record.status == "EXECUTED":
-        raise HTTPException(409, {"message": f"plan {body.plan_hash[:12]} has already been executed"})
+        # Refuse a replay only while the range is still in cold storage. Once it
+        # has been rehydrated the rows are back, live state matches the plan
+        # again, and the same hash describes a legitimate move -- so re-archiving
+        # is not a double-archive, it is the next archive.
+        #
+        # Without this, a plan is single-use forever: because the hash binds
+        # dataset + cutoff + row count + verdict, restoring a range regenerates
+        # the identical hash, and anyone running the demo a second time gets a
+        # 409 on a plan they just legitimately re-issued.
+        previous = db.scalars(
+            select(ArchiveRun)
+            .where(ArchiveRun.plan_hash == body.plan_hash)
+            .order_by(ArchiveRun.id.desc())
+        ).first()
+        if previous is None or previous.restored_at is None:
+            raise HTTPException(
+                409,
+                {
+                    "message": f"plan {body.plan_hash[:12]} has already been executed",
+                    "hint": "restore that run first if you want to archive this range again",
+                    "run_id": previous.id if previous else None,
+                },
+            )
+        logger.info(
+            "plan %s was executed as run %s and later restored; allowing re-execution",
+            body.plan_hash[:12],
+            previous.id,
+        )
 
     urn = record.dataset_urn
     cutoff = record.cutoff_date

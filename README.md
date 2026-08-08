@@ -107,6 +107,25 @@ typed, validated, `entity_types`-scoped, and survive other writers. The definiti
 **Ingest** uses the first-party `postgres` connector plus the `acryl-datahub` Python SDK, so the
 demo estate is real catalog content with real URNs — not hand-built fixtures.
 
+**Where the rows sit.** Each table's rows split three ways — **archivable**, **held by policy**
+(provably unread but inside the retention window), and **in use** (a consumer can still reach it).
+Only the middle band answers to configuration. Sweep `retentionYears` on `patient_encounters` and
+watch what does *not* change:
+
+| retention | floor | archivable | held by policy | in use |
+|---|---|---|---|---|
+| 14 years | 2012-08-08 | 0.0% | 60.6% | **39.4%** (433,161) |
+| 4 years | 2022-08-08 | 41.7% | 18.9% | **39.4%** (433,161) |
+| 2 years | 2024-08-08 | 60.6% | 0.0% | **39.4%** (433,161) |
+| 4 months | 2026-04-08 | 60.6% | 0.0% | **39.4%** (433,161) |
+
+Between rows two and three the binding constraint flips from policy to evidence, and after that
+the knob does nothing at all. **Retention is a floor, not a permission slip** — the band that
+refuses to move is fixed by `WHERE e.event_date BETWEEN DATE '2024-01-01' AND CURRENT_DATE`, read
+out of DataHub and parsed. Drive it with
+[`scripts/set_policy.py`](scripts/set_policy.py), which writes the policy to **DataHub**: retention
+belongs to a governance owner, not to the tool that benefits from relaxing it.
+
 **Agent surface** — two, sharing one executor:
 
 | | |

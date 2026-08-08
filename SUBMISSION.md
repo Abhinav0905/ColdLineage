@@ -75,6 +75,49 @@ approval gate against a scripted model — no key required to verify it.
 `skills/assess-data-temperature/` encodes the same procedure as a loadable **DataHub Skill** for
 anyone already in a skills runtime.
 
+## The estate view, and the demo that makes the point
+
+Every table's rows split three ways: **archivable** (past every consumer's reach and past the
+retention floor), **held by policy** (provably unread, but inside the retention window), and
+**in use** (a consumer can still reach it). Only the middle band answers to configuration.
+
+Sweeping `io.coldlineage.policy.retentionYears` on `patient_encounters` (1,100,000 rows):
+
+| retention | floor | archivable | held by policy | in use |
+|---|---|---|---|---|
+| 14 years | 2012-08-08 | 0.0% | 60.6% | **39.4%** (433,161) |
+| 4 years | 2022-08-08 | 41.7% | 18.9% | **39.4%** (433,161) |
+| 2 years | 2024-08-08 | 60.6% | 0.0% | **39.4%** (433,161) |
+| 4 months | 2026-04-08 | 60.6% | 0.0% | **39.4%** (433,161) |
+
+433,161 rows in use, identically, at every setting — including the two where policy has stopped
+binding at all. Between rows two and three the binding constraint flips from policy to evidence,
+and after that the knob does nothing. **Retention is a floor, not a permission slip.** The band
+that will not move is fixed by `WHERE e.event_date BETWEEN DATE '2024-01-01' AND CURRENT_DATE`,
+read out of DataHub and parsed. Policy is set with `scripts/set_policy.py`, which writes to
+DataHub rather than the UI offering a knob: retention belongs to a governance owner, not to the
+tool that benefits from relaxing it.
+
+## What DataHub does not model — verified by introspecting a live GMS
+
+We introspected the running DataHub v1.7.0 GraphQL schema — 935 types, 169 mutations — rather
+than asserting novelty from memory:
+
+- **No temperature, tier, archive or retention concept exists.** Types matching `Tier`,
+  `Temperat`, `Cold`, `Archiv`, `Retention`: none. `io.coldlineage.*` had nothing to reuse.
+- **Deprecation is a boolean on the whole entity.** `Deprecation { deprecated, note,
+  decommissionTime, replacement }` — no range, no row scope. *"Rows before 2024 are deprecated"*
+  is inexpressible. That is the gap this project fills.
+- **No mutation touches data.** All 169 operate on metadata; every `delete*` removes a catalog
+  object, and `batchUpdateSoftDeleted` soft-deletes the *metadata record*, not rows.
+- **DataHub stores consumer SQL but never interprets it.** `QueryStatement { value, language }`
+  is the raw string. The raw material for the decision is already in the catalog; the derivation
+  is not. That derivation is our contribution.
+
+One nuance we will not overclaim: `PartitionSpec` *does* exist, with a `timePartition`. Its own
+description is *"Information about the partition being profiled"* — it records what a profiling
+run measured. DataHub has partition **vocabulary**; it has no partition **lifecycle**.
+
 ## What DataHub already does that we did not rebuild
 
 Metadata Tests already finds cold tables by usage. Impact Analysis already validates blast radius.
@@ -97,10 +140,29 @@ landed.
 
 ## Verified
 
-516,088 of 1,100,000 rows archived to 11 verified Parquet parts, source truncated only after
-read-back passed, all four DataHub writeback operations landing on the entity, and a
-checksum-verified restore of all 516,088 rows. Artifacts from that exact run are committed in
-`examples/`, so judges can assess it without running anything.
+666,839 of 1,100,000 rows archived to 14 read-back-verified Parquet parts, the source truncated
+only after the retrieved bytes re-hashed clean, **nine of nine** DataHub writeback operations
+landing, the frozen archive resolving in DataHub as its own entity with 12 schema fields and COPY
+lineage back to `coldlineage.public.patient_encounters`, then a checksum-verified restore to
+1,100,000 rows spanning 2019-01-01 to 2026-08-05.
+
+A live agent run is committed verbatim at `examples/agent-run-lab-results.md`: `gpt-5.6-sol`,
+reasoning effort high, reading DataHub over MCP and **refusing** to archive the coldest table in
+the estate. Artifacts from these exact runs are in `examples/`, so judges can assess the system
+without running anything.
+
+Test suites, all green: 25 end-to-end smoke checks · 20 window-extraction · 13 band-split ·
+21 frozen-copy · 4 restore-integrity · 32 agent parity/trust-boundary · 12 agent-loop
+integration.
+
+**Bugs this development found and fixed, each by running the whole cycle rather than trusting a
+response.** They are listed because they are the argument for the verification discipline, not
+in spite of it: a restore that reported `verified: true` and restored nothing (a failed statement
+aborted the transaction, so the commit became a silent rollback); an archive that became a
+downstream consumer of its own source, blocking every future cutoff; a band chart that could
+paint rows archivable that `/simulate` refuses; a retention floor that truncated fractional years,
+so "four months" meant no floor at all; and a plan hash that was single-use forever, so anyone
+running the demo twice hit a 409 on a plan they had legitimately re-issued.
 
 Honest about scale: at demo size the saving is about a cent a month, and we report the measured
 figure rather than inflating it. What transfers is the fraction — **46.9% of a live table was
