@@ -20,8 +20,9 @@ them. Deprecation and soft-delete mark them. DPG Media cut Snowflake spend 25% d
 Two things remain, and they are the two that actually block the work:
 
 1. **DataHub's model is dataset- and column-level.** It can say "this table is unused". It has no
-   way to say *"rows before 2023 are cold while the last 90 days are hot"*. Partition-level
-   metadata is still an open feature request. So the enormous middle case — a **heavily-queried
+   way to say *"rows before 2023 are cold while the last 90 days are hot"*. It has partition
+   *vocabulary* — `PartitionSpec` carries a `timePartition` — but that describes what a profiling
+   run measured, not a lifecycle state you can set, search or act on. So the enormous middle case — a **heavily-queried
    table whose first four years nobody has read in years** — is invisible to dataset-level tiering.
    That case is most of the savings, and it is the one that terrifies people, because archiving a
    live table feels reckless.
@@ -90,7 +91,8 @@ input shows up as a visible gap rather than a plausible-looking number.
 | Retention floor, legal hold, business criticality | structured properties `io.coldlineage.policy.*` |
 | Schema, date column, owners, domain, tags, terms | `schemaMetadata`, `ownership`, `domain`, `tags` |
 
-**Write** — four contributions back to the graph after a verified archive:
+**Write** — four contributions to the *source* entity after a verified archive, plus a catalog
+entity for the archive itself. Nine of nine landed in the verified run below:
 
 | Contribution | Mutation | Why |
 |---|---|---|
@@ -98,6 +100,26 @@ input shows up as a visible gap rather than a plausible-looking number.
 | Deprecation note + `decommissionTime` | `updateDeprecation` | the warning a human sees on the entity |
 | Manifest link | `addLink` | where the bytes went, clickable |
 | `cold-tier-archived` tag | `addTag` | makes the archived set searchable |
+
+And the archive becomes **its own dataset** — `s3.coldlineage-archive/<table>/<cutoff>` — because the
+bytes are a governed asset in their own right: PHI, a schema, a retention obligation, and somebody
+will eventually need to find them without already knowing which source table to look behind. Five
+aspects, emitted as MetadataChangeProposals to `POST /aspects?action=ingestProposal`
+([`backend/app/datahub/frozen.py`](backend/app/datahub/frozen.py)):
+
+| Aspect | What it carries |
+|---|---|
+| `datasetProperties` | cutoff, rows, bytes, part count, sha256, manifest URI, source URN |
+| `schemaMetadata` | the source's columns and types, carried over (12 for `patient_encounters`) |
+| `subTypes` | `Cold Tier Archive` |
+| `upstreamLineage` | **COPY** from the source — the same rows moved, not derived |
+| `globalTags` | `cold-tier-frozen-copy`, so "where are the archives?" is one search |
+
+A sixth, `erModelRelationship`, retargets the source's declared foreign keys onto the frozen copy —
+built only from constraints the database actually enforces, never from two columns that happen to
+share a name, because a guess written into a catalog becomes a fact somebody else plans against. The
+demo estate declares no foreign keys, so that path is a documented no-op here and is covered by unit
+tests instead.
 
 Deliberately **not** done: writing the `datasetProperties` aspect wholesale. That aspect holds other
 writers' custom properties and a whole-aspect PUT silently destroys them. Structured properties are
@@ -218,7 +240,7 @@ EXECUTE cutoff=2023-01-01
   516,088 rows -> 11 Parquet parts -> s3://coldlineage-archive/...
   read-back digest match: true | rows 516,088/516,088 | schema match: true
   -> source deleted only after verification.  1,100,000 -> 583,912
-  DataHub writeback: 4/4 operations ok
+  DataHub writeback: 9/9 operations ok   (4 on the source, 5 aspects on the frozen archive)
 
 RESTORE  516,088 rows rehydrated, SHA-256 verified
 ```
@@ -273,12 +295,18 @@ what landed.
 
 ## What is honest about the numbers
 
-At demo scale the storage saving is **about one cent a month**. 516,088 rows is 93 MB, and no amount
-of framing makes that a business case. The API reports the measured figure alongside the unit rate
-($113.66/TB-month at S3 Standard → Glacier IR) and the archived fraction, and does not round the
-measured one up into looking impressive.
+At demo scale the storage saving is **about one cent a month**. The verified run moved 666,839 rows
+out of Postgres and landed 28.7 MB of Parquet, and no amount of framing makes that a business case.
 
-**What transfers is the fraction, not the dollars**: 46.9% of a live, actively-queried table turned
+The API reports the measured figure alongside the unit rates it actually used — hot
+**$0.115/GB-month**, cold **$0.004/GB-month**, a $113.66/TB-month delta — plus the archived
+fraction, and does not round the measured one up into looking impressive. The hot rate is
+deliberately *warehouse-attached* storage (managed-Postgres SSD), not S3 Standard at
+$0.023/GB-month: the bytes being freed sit in a database, not in a bucket. Priced against S3
+Standard the same delta would be $19.46/TB-month, and quoting that would flatter the number by
+pretending the hot side was already object storage.
+
+**What transfers is the fraction, not the dollars**: 60.6% of a live, actively-queried table turned
 out to be provably unread. Applied to a real estate that ratio is the entire argument, and it is
 measured, not modelled.
 

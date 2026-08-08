@@ -33,7 +33,7 @@ SQL, or unreadable lineage all resolve to *unbounded*, which refuses the archive
 evidence is not evidence of safety.
 
 The demo estate makes the argument in two rows. `patient_encounters` scores **81.2 HOT** and is
-genuinely in active use — yet 46.9% of it is provably unread and archivable. `lab_results` has **0
+genuinely in active use — yet 60.6% of it is provably unread and archivable. `lab_results` has **0
 queries and 0 users in 30 days** — every dataset-level tool archives it — and is **blocked**, because
 one HIPAA extract runs `WHERE performing_lab IS NOT NULL`: it *has* a filter, so a "is this query
 filtered?" heuristic passes it, but with no date bound it reads every row ever written.
@@ -48,10 +48,22 @@ criticality from typed structured properties `io.coldlineage.policy.*`; schema, 
 tags from the entity. Every value carries a provenance tag rendered in the UI, so a missing input
 appears as a visible gap rather than a plausible number.
 
-After a verified archive it contributes four things back: six typed archive properties via
-`upsertStructuredProperties`, a deprecation note carrying the cutoff and restore path via
-`updateDeprecation`, a manifest link via `addLink`, and a `cold-tier-archived` tag. It deliberately
-never writes `datasetProperties` wholesale, because that clobbers other writers' custom properties.
+After a verified archive it contributes four things to the source entity: six typed archive
+properties via `upsertStructuredProperties`, a deprecation note carrying the cutoff and restore path
+via `updateDeprecation`, a manifest link via `addLink`, and a `cold-tier-archived` tag. It
+deliberately never writes `datasetProperties` wholesale, because that clobbers other writers' custom
+properties.
+
+The archive then becomes **its own dataset** — `s3.coldlineage-archive/<table>/<cutoff>` — because
+the bytes are a governed asset in their own right: PHI, a schema, a retention obligation, and
+somebody will eventually need to find them without already knowing which source table to look
+behind. Five aspects go over `POST /aspects?action=ingestProposal`: `datasetProperties` (cutoff,
+rows, sha256, manifest URI, source URN), `schemaMetadata` (the source's 12 columns and types,
+carried over), `subTypes` (`Cold Tier Archive`), `upstreamLineage` (**COPY** from the source — the
+same rows moved, not derived), and `globalTags`. A sixth, `erModelRelationship`, retargets the
+source's declared foreign keys onto the frozen copy, built only from constraints the database
+actually enforces. Nine of nine operations landed in the verified run.
+
 Ingestion uses the first-party `postgres` connector plus the `acryl-datahub` SDK.
 
 **The agent.** `agent/` reads DataHub through the official **MCP Server** — `search`,
@@ -98,21 +110,35 @@ read out of DataHub and parsed. Policy is set with `scripts/set_policy.py`, whic
 DataHub rather than the UI offering a knob: retention belongs to a governance owner, not to the
 tool that benefits from relaxing it.
 
-## What DataHub does not model — verified by introspecting a live GMS
+## What DataHub does not model — verified against a live GMS and the v1.7.0 parser
 
 We introspected the running DataHub v1.7.0 GraphQL schema — 935 types, 169 mutations — rather
 than asserting novelty from memory:
 
 - **No temperature, tier, archive or retention concept exists.** Types matching `Tier`,
   `Temperat`, `Cold`, `Archiv`, `Retention`: none. `io.coldlineage.*` had nothing to reuse.
-- **Deprecation is a boolean on the whole entity.** `Deprecation { deprecated, note,
-  decommissionTime, replacement }` — no range, no row scope. *"Rows before 2024 are deprecated"*
-  is inexpressible. That is the gap this project fills.
+- **Deprecation is a boolean, and its finest grain is a column — never a row range.** It scopes
+  below the dataset perfectly well: `UpdateDeprecationInput` takes `subResourceType:
+  DATASET_FIELD` with a field path. What is missing at *every* grain is a predicate — no range,
+  no filter, no row scope anywhere in the type. *"Rows before 2024 are deprecated"* is
+  inexpressible. That is the gap this project fills.
 - **No mutation touches data.** All 169 operate on metadata; every `delete*` removes a catalog
   object, and `batchUpdateSoftDeleted` soft-deletes the *metadata record*, not rows.
-- **DataHub stores consumer SQL but never interprets it.** `QueryStatement { value, language }`
-  is the raw string. The raw material for the decision is already in the catalog; the derivation
-  is not. That derivation is our contribution.
+- **DataHub parses consumer SQL — with sqlglot, as we do — but deliberately discards the
+  bound.** `datahub/sql_parsing/sqlglot_lineage.py` resolves tables and column-level lineage, and
+  persists it. What it does not keep is the literal. Run DataHub's own generalizer on the exact
+  predicate our demo turns on:
+
+  ```
+  in   WHERE e.event_date BETWEEN DATE '2024-01-01' AND CURRENT_DATE
+  out  WHERE e.event_date BETWEEN CAST(%s AS DATE)   AND CURRENT_DATE
+  ```
+
+  The date becomes a placeholder, which is exactly right for fingerprinting a query shape and
+  exactly useless for deciding a cutoff: the fingerprint is identical whether a consumer reads
+  from 2024 or from 1999. DataHub derives **which columns** a consumer reads; nothing derives
+  **how far back**. That temporal bound is our contribution, and it is recoverable only because
+  DataHub stored the statement verbatim alongside the generalized one.
 
 One nuance we will not overclaim: `PartitionSpec` *does* exist, with a `timePartition`. Its own
 description is *"Information about the partition being profiled"* — it records what a profiling
