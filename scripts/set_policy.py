@@ -184,12 +184,21 @@ def main() -> int:
         before = read_years(args.gms, urn, args.token)
         write_years(args.gms, urn, years, args.token)
 
-        # Read it back, with patience. A structured-property write is not
-        # readable the instant the mutation returns -- it travels through
-        # DataHub's change log before a read reflects it. Querying too early
-        # returns the OLD value, which during a live demo looks exactly like the
-        # feature not working. So poll until the new value is actually visible,
-        # and only then tell the operator to refresh.
+        # Read it back, with patience -- but not for the reason you might guess.
+        #
+        # GMS commits the aspect to its primary store IN-PROCESS, so an
+        # entity-by-URN read is already read-your-write consistent; the Kafka
+        # change log carries the *consequences* of a write, not the request. What
+        # lags is everything derived from it: the OpenSearch index picks the write
+        # up after a bulk flush plus a refresh interval, roughly two to four
+        # seconds on a default install.
+        #
+        # That matters here because ColdLineage discovers the estate with
+        # `searchAcrossEntities` (see datahub/queries.py), which is the search
+        # path -- so the dashboard shows the old value for a few seconds after a
+        # policy change even though the catalog already holds the new one. During
+        # a live demo that is indistinguishable from a broken feature. So poll
+        # until the value is genuinely visible, then tell the operator to refresh.
         after = None
         for attempt in range(args.wait_attempts):
             after = read_years(args.gms, urn, args.token)

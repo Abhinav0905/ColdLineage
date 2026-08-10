@@ -48,10 +48,13 @@ Open these tabs, in this order, so you never fumble:
 Record at **1920×1080**, browser at ~90% zoom so the band chart and the estate table both fit
 without horizontal scroll.
 
-> **The one thing that will bite you.** A structured-property write is not readable the instant
-> the mutation returns — it travels through DataHub's change log first. `set_policy.py` polls
-> until the new value is visible, but **still leave a beat before you hit Refresh.** If you
-> refresh too fast you will show the old numbers and it will look like nothing happened.
+> **The one thing that will bite you.** GMS commits an aspect to its primary store in-process, so
+> the catalog holds your new value immediately — but the OpenSearch index it is *read* through
+> takes a bulk flush plus a refresh interval to catch up, two to four seconds on a default install.
+> ColdLineage discovers the estate via `searchAcrossEntities`, so it reads the search path.
+> `set_policy.py` polls until the value is genuinely visible, but **still leave a beat before you
+> hit Refresh.** Refresh too fast and you will show the old numbers, and it will look on camera
+> like nothing happened.
 
 ---
 
