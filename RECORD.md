@@ -140,7 +140,23 @@ Type:
 >
 > Because past a point, the limit stops being policy and becomes this:
 
-*Switch to the Candidates tab. Point at the extracted SQL predicate.*
+*Switch to the Candidates tab (`patient_encounters` is already selected).*
+
+**Where to look — the page is long, so this is the exact route:**
+
+1. Scroll past the red **DO NOT ARCHIVE** banner and past the timeline chart.
+2. Stop at the table headed **"Consumer windows"**.
+3. **Second row: `Quarterly Compliance Dashboard`.** Read across it — `READS BACK TO`
+   says **2024-01-01**, `STATE` says **BLOCKED**, and the **EVIDENCE** column holds
+   the predicate:
+
+   ```
+   e.event_date BETWEEN CAST('2024-01-01' AS DATE) AND CURRENT_DATE
+   ```
+
+4. Click **`</> the query we parsed`** just under it. The full original query unfolds.
+
+*Point at that predicate as you say:*
 
 > A compliance dashboard reads from January 2024. ColdLineage found that by pulling
 > the query's real SQL out of DataHub and parsing it.
@@ -148,6 +164,12 @@ Type:
 > **The config is a floor, not a permission slip.**
 
 *Stop recording.*
+
+> **No-scroll fallback.** If moving around the page mid-take feels risky, the red
+> **DO NOT ARCHIVE** banner at the top of the same page already says it in words:
+> *"Blocked by Quarterly Compliance Dashboard: it reads back to 2024-01-01, which is
+> 217 days inside the proposed cutoff."* Point at that instead. Less striking than the
+> raw SQL, but no navigation and the same claim.
 
 ---
 
