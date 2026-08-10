@@ -56,6 +56,28 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     @property
+    def sqlalchemy_url(self) -> str:
+        """The DATABASE_URL, with the driver SQLAlchemy actually has.
+
+        Managed platforms hand out a bare `postgresql://` (or legacy
+        `postgres://`) URL. SQLAlchemy resolves a bare scheme to psycopg2, and we
+        ship psycopg v3 — so the app dies at import with
+        `ModuleNotFoundError: No module named 'psycopg2'`, which reads as a
+        missing dependency rather than a URL that needs one word added.
+
+        Normalising here keeps every platform's own connection string usable
+        verbatim, with no hand-editing of an injected secret.
+        """
+        url = self.database_url
+        for prefix in ("postgresql+psycopg://", "postgresql+psycopg2://", "postgresql+asyncpg://"):
+            if url.startswith(prefix):
+                return url
+        for legacy in ("postgresql://", "postgres://"):
+            if url.startswith(legacy):
+                return "postgresql+psycopg://" + url[len(legacy):]
+        return url
+
+    @property
     def datahub_is_live(self) -> bool:
         return self.datahub_mode == "live"
 
