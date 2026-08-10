@@ -48,7 +48,74 @@ Screen recording at **1920×1080**. Browser zoom **90%**.
 
 ---
 
+# CLIP 0 — the cold open  ·  ~20 seconds
+### Record this last, place it first. It REPLACES clip 1 — see the note at the end.
+
+**Screen:** the DataHub UI at `http://localhost:9002`, on the `patient_encounters` entity.
+Let them see the real product for a beat before you say anything about its limits.
+
+> **DataHub is the open-source metadata platform for a data estate** — one catalog holding
+> every dataset, who owns it, what depends on it, and the SQL that reads it.
+>
+> **And it is genuinely good at this.** It already finds tables nobody queries, shows you the
+> blast radius before you touch one, and marks them deprecated. DPG Media reported cutting
+> Snowflake spend twenty-five percent doing exactly that.
+>
+> **But its model is dataset- and column-level.** It can tell you *this table is unused*. It has
+> no way to say *rows before 2024 are cold while the last ninety days are hot*.
+>
+> **And nothing in DataHub moves data** — every operation is metadata-only, deliberately, because
+> a catalog that could delete your warehouse is a catalog nobody would install.
+>
+> So the biggest case stays invisible: **a heavily-queried table whose first four years nobody
+> has read in years.** That is the gap ColdLineage fills — it proves which date range inside a
+> live table is safe to move, moves it, and writes the receipt back into DataHub.
+
+*Switch to the ColdLineage Overview as you say the last sentence. Stop recording.*
+
+---
+
+### If you would rather show text than talk over a screen
+
+Same content as four title cards, six seconds each. Plain white-on-black, no animation:
+
+```
+DataHub — the open-source metadata catalog for a data estate.
+Every dataset, its owners, its dependencies, and the SQL that reads it.
+
+It already finds unused tables and shows their blast radius.
+DPG Media reported a 25% Snowflake saving doing exactly that.
+
+But its model is dataset- and column-level.
+"This table is unused" — yes. "Rows before 2024 are cold" — inexpressible.
+And nothing in DataHub moves data. That is deliberate.
+
+So the biggest case is invisible:
+a heavily-queried table whose first four years nobody has read.
+```
+
+---
+
+> ### Runtime — read this before you edit
+>
+> Clips 1 through 6 already run about **170 seconds** against a **180-second hard limit**.
+> Clip 0 cannot simply be added on top.
+>
+> **Clip 0 replaces clip 1.** Clip 1's line — *"DataHub can tell you a table is cold, it cannot
+> tell you half a table is cold"* — is the same claim clip 0 makes at more length. Running both
+> says it twice and overruns.
+>
+> So: **clip 0 → clip 2 → 3 → 4 → 5 → 6.** That lands near 175 seconds. If you are still long,
+> cut the `cold-tier-frozen-copy` search from clip 5 first — it is in `examples/` anyway.
+>
+> Say "DPG Media **reported**" — it is their published figure from a vendor case study, not
+> something we measured. Overstating someone else's number in front of them is the one
+> avoidable mistake here.
+
+---
+
 # CLIP 1 — the claim  ·  ~15 seconds
+### Superseded by clip 0 if you use it. Do not run both.
 
 **Screen:** Overview, top of page.
 
