@@ -519,6 +519,27 @@ async def restore(body: RestoreBody, db: Session = Depends(get_db)):
     if run is None:
         raise HTTPException(404, {"message": f"archive run {body.run_id} not found"})
 
+    if run.restored_at is not None and not body.temporary:
+        # Appending an already-restored range re-inserts rows that are back in the
+        # table, so the primary key rejects it and the transaction aborts. The rows
+        # are safe -- nothing is half-written -- but the caller got a bare 500 and
+        # no idea why. Say what happened instead.
+        #
+        # A temporary restore is still allowed: reading the archive into a side
+        # table for inspection is harmless however many times you do it.
+        raise HTTPException(
+            409,
+            {
+                "message": (
+                    f"run {run.id} was already restored at "
+                    f"{run.restored_at.isoformat()}; those rows are back in "
+                    f"{run.dataset_name} and re-appending them would duplicate keys"
+                ),
+                "hint": "archive a range first, or pass temporary=true to restore into a side table",
+                "rows_already_restored": run.rows_archived,
+            },
+        )
+
     service = _context_service()
     context = await service.build(db, run.dataset_urn)
     manifest = ArchiveManifest.model_validate(run.manifest)

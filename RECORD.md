@@ -234,10 +234,20 @@ Click Simulate → Plan → Execute. Approve when it asks.
 
 **Screen:** terminal, then Overview.
 
+> **Clip 6 undoes clip 5.** It restores the range clip 5 archived, so clip 5 must have run
+> first. And do not hardcode a run id — every archive makes a new one. Let the shell find
+> the unrestored run:
+
 ```bash
+RUN=$(curl -s http://localhost:8000/api/runs \
+  | python3 -c "import json,sys;r=[x for x in json.load(sys.stdin) if not x.get('restored_at')];print(r[0]['id'] if r else '')")
+echo "restoring run $RUN"
+
 curl -s -X POST http://localhost:8000/api/restore \
-  -H 'Content-Type: application/json' -d '{"run_id":1,"temporary":false}'
+  -H 'Content-Type: application/json' -d "{\"run_id\":$RUN,\"temporary\":false}"
 ```
+
+*(If `$RUN` comes back empty, nothing is archived — go shoot clip 5 first.)*
 
 > And it's reversible. Checksum-verified against the manifest on the way back,
 > or it refuses to restore at all.
@@ -265,10 +275,11 @@ Re-record clip 3 (the policy sweep):
 Re-record clip 5 (the archive):
 
 ```bash
-# put the rows back first, then the plan becomes executable again
-curl -s http://localhost:8000/api/runs | python3 -m json.tool | grep -B4 '"restored_at": null'
-curl -s -X POST http://localhost:8000/api/restore -H 'Content-Type: application/json' \
-  -d '{"run_id":<the id above>,"temporary":false}'
+# put the rows back first; the plan then becomes executable again
+RUN=$(curl -s http://localhost:8000/api/runs \
+  | python3 -c "import json,sys;r=[x for x in json.load(sys.stdin) if not x.get('restored_at')];print(r[0]['id'] if r else '')")
+[ -n "$RUN" ] && curl -s -X POST http://localhost:8000/api/restore \
+  -H 'Content-Type: application/json' -d "{\"run_id\":$RUN,\"temporary\":false}" || echo "nothing to restore"
 ```
 
 Full reset to the start line:
