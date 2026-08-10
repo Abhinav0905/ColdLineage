@@ -1,0 +1,35 @@
+# Backend image for a hosted deploy. Built from the REPO ROOT, not ./backend.
+#
+# backend/Dockerfile exists for local development, where docker-compose
+# bind-mounts examples/cassettes in at run time. A hosted platform has no mounts,
+# so replay mode would find an empty cassette directory and the estate would come
+# back as a 503 with nothing to explain it. This image bakes them in instead,
+# which means the build context has to be the repo root.
+#
+# Also runs the real uvicorn rather than the dev server: no --reload, two workers.
+
+FROM python:3.12-slim
+WORKDIR /app
+
+RUN pip install --no-cache-dir --upgrade pip
+
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY backend/app ./app
+
+# The recorded GMS responses replay mode serves. Verbatim captures from a live
+# DataHub v1.7.0, each stamped with when it was recorded so the UI can label the
+# data `cassette:recorded` rather than passing it off as live.
+COPY examples/cassettes ./cassettes
+
+# Seeding the demo warehouse is a one-off from the platform's shell, so the
+# scripts have to be in the image.
+COPY scripts ./scripts
+
+ENV PYTHONUNBUFFERED=1 \
+    CASSETTE_DIR=/app/cassettes \
+    DATAHUB_MODE=replay
+
+EXPOSE 8000
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2"]

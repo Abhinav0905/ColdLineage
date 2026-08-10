@@ -1,0 +1,95 @@
+# Render blueprint — a hosted, read-only ColdLineage
+#
+#   render.com -> New -> Blueprint -> point at this repo
+#
+# ---------------------------------------------------------------------------
+# What this gives you, and what it deliberately does not
+# ---------------------------------------------------------------------------
+# WORKS: the estate view with the three-band row split, every consumer's derived
+# history window and the SQL it was parsed from, the evidence graph, temperature
+# scoring, and cutoff simulation. That is the whole decision surface.
+#
+# DOES NOT WORK HERE: execute and restore. They move real bytes and need object
+# storage, and there is no MinIO on Render. Set the MINIO_* variables below at a
+# real S3 bucket and they light up; leave them and the two destructive endpoints
+# fail loudly rather than pretending. That is the right default for a public URL
+# anyone can click.
+#
+# DataHub runs in REPLAY mode against the cassettes committed in
+# examples/cassettes/ — 33 verbatim GMS responses recorded from a live v1.7.0.
+# This is not a mock: every value the UI shows is tagged `cassette:recorded` with
+# the timestamp it was captured, so a visitor can tell recorded data from live.
+# Standing up real DataHub needs GMS + Kafka + OpenSearch + MySQL and about
+# 4.5 GB, which is not a thing to put on a free tier.
+#
+# To point at a real DataHub instead, set on coldlineage-api:
+#   DATAHUB_MODE=live   DATAHUB_GMS_URL=https://your-gms   DATAHUB_TOKEN=...
+#
+# ---------------------------------------------------------------------------
+# One manual step after the first deploy
+# ---------------------------------------------------------------------------
+# The warehouse starts empty, and an empty warehouse honestly reports every band
+# as unmeasured. Seed it once from the api service's Shell tab:
+#
+#   python scripts/seed_warehouse.py
+#
+# That writes ~3.65M rows across five tables, about 604 MB. Render's free
+# Postgres holds 1 GB, so it fits — but it is not instant. Watch it finish before
+# sharing the URL.
+
+databases:
+  - name: coldlineage-db
+    databaseName: coldlineage
+    user: coldlineage
+    plan: free
+
+services:
+  # ---- API ----------------------------------------------------------------
+  - type: web
+    name: coldlineage-api
+    runtime: docker
+    # Root context on purpose: this image bakes in examples/cassettes, which a
+    # ./backend context cannot even see. See Dockerfile.render.
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: coldlineage-db
+          property: connectionString
+      # DATAHUB_MODE and CASSETTE_DIR are set in Dockerfile.render. Override
+      # DATAHUB_MODE to `live` here, with DATAHUB_GMS_URL, to point at real GMS.
+      # Present so the two destructive endpoints fail with a clear message rather
+      # than a stack trace. Replace with real S3 credentials to enable them.
+      - key: MINIO_ENDPOINT
+        value: ""
+      - key: MINIO_ACCESS_KEY
+        value: ""
+      - key: MINIO_SECRET_KEY
+        value: ""
+      - key: MINIO_BUCKET
+        value: coldlineage-archive
+
+  # ---- UI -----------------------------------------------------------------
+  - type: web
+    name: coldlineage-ui
+    runtime: docker
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: free
+    dockerCommand: sh -c "npm run build && npm start -- -H 0.0.0.0 -p $PORT"
+    envVars:
+      # Next.js inlines NEXT_PUBLIC_* at build time, and the build happens inside
+      # dockerCommand above — so this has to be set here, not injected later, or
+      # the browser bundle ships with the wrong API host baked in.
+      # Render hands over the bare service root; lib/api.ts appends /api when it
+      # is missing, so this wires itself with no hardcoded hostname.
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: coldlineage-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"

@@ -20,8 +20,19 @@ import type {
   RunRow,
 } from './types';
 
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+/** Every route below is relative to this, so it must end at `/api`.
+ *
+ *  Platforms hand you the service root and nothing more — Render's
+ *  RENDER_EXTERNAL_URL is `https://name.onrender.com` — so accept either form and
+ *  normalise. Without this, a deploy wired straight from the platform's own
+ *  variable calls `/datasets` instead of `/api/datasets` and every request 404s,
+ *  with nothing in the UI to suggest why. */
+function resolveBase(raw: string | undefined): string {
+  const url = (raw || 'http://localhost:8000/api').replace(/\/+$/, '');
+  return /\/api$/.test(url) ? url : `${url}/api`;
+}
+
+export const API_BASE = resolveBase(process.env.NEXT_PUBLIC_API_URL);
 
 export class ApiError extends Error {
   readonly status: number;
