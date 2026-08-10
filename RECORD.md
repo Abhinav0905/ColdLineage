@@ -64,20 +64,22 @@ Screen recording at **1920×1080**. Browser zoom **90%**.
 
 # CLIP 2 — where the rows sit  ·  ~30 seconds
 
-**Screen:** Overview. Scroll to "Where the rows actually sit". Move the cursor slowly along
-one bar at a time as you speak.
+**Screen:** Overview. Scroll to "Where the rows actually sit".
 
 > Every table's rows split three ways.
->
-> Green is archivable. Amber is provably unread, but held by retention policy.
-> Blue is rows a consumer can still reach.
 
-*Point at `patient_encounters` — 1.1 million rows, scored HOT.*
+*Point at `billing_ledger` — it is the only bar showing all three colours right now
+(30% green, 59% amber, 11% blue). Explain the legend against THAT bar.*
+
+> Green is archivable. Amber — the gold band — is provably unread, but held by
+> retention policy. Blue is rows a consumer can still reach.
+
+*Now move to `patient_encounters` — 1.1 million rows, scored HOT, and 61% amber.*
 
 > This table is genuinely busy. It scores hot.
 >
-> And sixty percent of it is provably unread — its first four years are cold
-> even though the table isn't.
+> And sixty percent of it is provably unread — its first four years are cold even
+> though the table isn't. Right now retention is holding all of it.
 
 *Point at `lab_results` — the bar that is entirely blue.*
 
@@ -87,6 +89,10 @@ one bar at a time as you speak.
 > Here it's a solid wall of *in use*. In a minute, the agent will tell you why.
 
 *Stop recording.*
+
+> **Why there is no green on `patient_encounters` yet:** retention is at fourteen years,
+> so nothing on that table is permitted to move. Releasing it is Clip 3. Do not describe
+> green while pointing at that bar — use `billing_ledger` for the legend, as above.
 
 ---
 
