@@ -285,7 +285,8 @@ Stop. Don't narrate around it — it always shows.
 
 - **Estate page errors** → GMS died. `docker start datahub-datahub-gms-quickstart-1`, wait 40s.
 - **Bands didn't change** → you refreshed too fast. Wait three seconds, refresh again.
-- **Agent errors on the key** → `set -a && . ./.env && set +a`, then rerun.
+- **Agent says "No model provider credentials found"** → the key is not in that shell.
+  `export OPENAI_API_KEY=$(grep -E '^OPENAI_API_KEY=' .env | cut -d= -f2-)`, then rerun.
 
 ## If you are running out of time
 
