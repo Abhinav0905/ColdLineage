@@ -61,14 +61,19 @@ services:
           property: connectionString
       # DATAHUB_MODE and CASSETTE_DIR are set in Dockerfile.render. Override
       # DATAHUB_MODE to `live` here, with DATAHUB_GMS_URL, to point at real GMS.
-      # Present so the two destructive endpoints fail with a clear message rather
-      # than a stack trace. Replace with real S3 credentials to enable them.
+      # A syntactically valid endpoint that resolves to nothing. It must NOT be
+      # empty: ArchiveService builds its boto3 client at import time, and an empty
+      # endpoint_url raises ValueError("Invalid endpoint: ") before the app can
+      # serve anything -- so the container crash-loops rather than starting with
+      # archiving disabled. Reads never touch S3, so the estate view is unaffected;
+      # execute and restore fail when called, which is the intent. Point these at a
+      # real bucket to enable them.
       - key: MINIO_ENDPOINT
-        value: ""
+        value: http://127.0.0.1:9000
       - key: MINIO_ACCESS_KEY
-        value: ""
+        value: disabled
       - key: MINIO_SECRET_KEY
-        value: ""
+        value: disabled
       - key: MINIO_BUCKET
         value: coldlineage-archive
 
